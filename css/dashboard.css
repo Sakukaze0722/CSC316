@@ -754,6 +754,44 @@ path.country.selected-pulse {
   box-shadow: 0 8px 22px rgba(59,130,246,0.15);
 }
 
+.embedded-analysis-section {
+  position: relative;
+  z-index: 1;
+  padding: 0.6rem 1.5rem 2rem;
+}
+
+.embedded-analysis-header {
+  margin-bottom: 10px;
+}
+
+.embedded-analysis-header h2 {
+  font-size: 1.1rem;
+  color: var(--dbg-btn-color);
+  margin: 0 0 4px;
+}
+
+.embedded-analysis-header p {
+  color: var(--dbg-hint);
+  font-size: 0.86rem;
+  margin: 0;
+}
+
+.embedded-analysis-frame-wrap {
+  border: 1px solid var(--dbg-panel-border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--dbg-panel-bg);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.embedded-analysis-frame {
+  width: 100%;
+  min-height: 1200px;
+  border: none;
+  display: block;
+  background: #fff;
+}
+
 .rank-drawer {
   position: fixed;
   left: 50%;

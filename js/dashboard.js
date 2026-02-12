@@ -98,6 +98,7 @@
   const particlesCanvas = document.getElementById("particlesCanvas");
   const headerEl = document.querySelector(".dashboard-header");
   const mapWrapperEl = document.querySelector(".map-wrapper");
+  const embeddedAnalysisFrame = document.querySelector(".embedded-analysis-frame");
 
   function getGameColors() {
     return THEME_COLORS[currentTheme][currentGame];
@@ -665,6 +666,32 @@
     });
   }
 
+  function initEmbeddedAnalysisFrame() {
+    if (!embeddedAnalysisFrame) return;
+    const resizeFrame = () => {
+      try {
+        const doc = embeddedAnalysisFrame.contentWindow?.document;
+        if (!doc) return;
+        const h = Math.max(
+          doc.body?.scrollHeight || 0,
+          doc.documentElement?.scrollHeight || 0
+        );
+        if (h > 0) embeddedAnalysisFrame.style.height = `${h + 16}px`;
+      } catch (_) {
+        // Ignore cross-document access errors; same-origin should work locally.
+      }
+    };
+
+    embeddedAnalysisFrame.addEventListener("load", () => {
+      resizeFrame();
+      setTimeout(resizeFrame, 250);
+      setTimeout(resizeFrame, 700);
+    });
+    window.addEventListener("resize", () => {
+      setTimeout(resizeFrame, 150);
+    });
+  }
+
   async function init() {
     initThemeToggle();
     initSoundToggle();
@@ -676,6 +703,7 @@
     initStoryObserver();
     initParallax();
     initParticles();
+    initEmbeddedAnalysisFrame();
     updateStatusBar();
     renderStoryModeVisibility();
     renderAchievements();

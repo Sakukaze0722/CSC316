@@ -20,8 +20,117 @@
     </section>
 
     <section id="visualization-1">
-      <h2>Visualization 1</h2>
-      <div id="vis1" class="vis-container"></div>
+      <h2>Map Control Analysis</h2>
+      <p>How does territorial control shift between CT and T sides as the round progresses?</p>
+      <div id="vis1" class="vis-container">
+        <div class="mc-wrapper">
+          <!-- Controls bar -->
+          <div class="mc-controls">
+            <div class="mc-control-group">
+              <label>Map</label>
+              <div class="mc-map-tabs">
+                <div class="mc-map-tab active" data-map="de_mirage">Mirage</div>
+                <div class="mc-map-tab" data-map="de_dust2">Dust II</div>
+                <div class="mc-map-tab" data-map="de_inferno">Inferno</div>
+              </div>
+            </div>
+            <div class="mc-control-group">
+              <label>Round</label>
+              <select class="mc-select" id="mcRoundSelect"></select>
+            </div>
+            <div class="mc-control-group">
+              <button class="mc-btn" id="mcPlayBtn">&#9654; Play</button>
+            </div>
+            <div class="mc-control-group">
+              <label>Speed</label>
+              <select class="mc-select" id="mcSpeedSelect">
+                <option value="200">0.5x</option>
+                <option value="100" selected>1x</option>
+                <option value="50">2x</option>
+                <option value="25">4x</option>
+              </select>
+            </div>
+            <div class="mc-control-group">
+              <label>Opacity</label>
+              <select class="mc-select" id="mcOpacitySelect">
+                <option value="0.45">Low</option>
+                <option value="0.6" selected>Medium</option>
+                <option value="0.75">High</option>
+              </select>
+            </div>
+          </div>
+          <!-- Main body -->
+          <div class="mc-body">
+            <div class="mc-map-wrapper">
+              <div class="mc-map-container" id="mcMapContainer">
+                <img id="mcRadarImg" src="output/map_control/de_mirage.png" alt="Radar map">
+                <canvas id="mcControlCanvas" width="128" height="128"></canvas>
+                <canvas id="mcPlayerCanvas" width="560" height="560"></canvas>
+              </div>
+              <div class="mc-slider-container">
+                <div class="mc-slider-row">
+                  <input type="range" class="mc-time-slider" id="mcTimeSlider" min="0" max="100" value="0">
+                  <span class="mc-frame-label" id="mcFrameLabel">Frame 0 / 0</span>
+                </div>
+              </div>
+              <div class="mc-alive-indicator">
+                <div class="mc-alive-team">
+                  <div class="mc-alive-dot" style="background:#58a6ff"></div>
+                  <span style="color:#58a6ff">CT: <span id="mcCtAlive">5</span> alive</span>
+                </div>
+                <div class="mc-alive-team">
+                  <div class="mc-alive-dot" style="background:#ff7b72"></div>
+                  <span style="color:#ff7b72">T: <span id="mcTAlive">5</span> alive</span>
+                </div>
+              </div>
+            </div>
+            <!-- Side panel -->
+            <div class="mc-side-panel">
+              <div class="mc-panel-card">
+                <h3>Control Legend</h3>
+                <div class="mc-legend-bar" id="mcLegendBar"></div>
+                <div class="mc-legend-labels">
+                  <span>T Control</span>
+                  <span>Contested</span>
+                  <span>CT Control</span>
+                </div>
+              </div>
+              <div class="mc-panel-card">
+                <h3>Map Control</h3>
+                <div class="mc-control-bar-outer">
+                  <div class="mc-control-bar-ct" id="mcCtBar">50%</div>
+                  <div class="mc-control-bar-t" id="mcTBar">50%</div>
+                </div>
+                <div style="height: 10px"></div>
+                <div class="mc-stat-row">
+                  <span class="mc-stat-label">CT Territory</span>
+                  <span class="mc-stat-value mc-stat-ct" id="mcCtPctLabel">50%</span>
+                </div>
+                <div class="mc-stat-row">
+                  <span class="mc-stat-label">T Territory</span>
+                  <span class="mc-stat-value mc-stat-t" id="mcTPctLabel">50%</span>
+                </div>
+                <div class="mc-stat-row">
+                  <span class="mc-stat-label">Contested</span>
+                  <span class="mc-stat-value mc-stat-neutral" id="mcNeutralPctLabel">0%</span>
+                </div>
+              </div>
+              <div class="mc-panel-card mc-info">
+                <h3>How It Works</h3>
+                <p>
+                  Territory is computed using <strong>Voronoi nearest-player distance</strong>:
+                  each point on the map belongs to whichever team's closest alive player is nearer.<br><br>
+                  <strong style="color:#58a6ff">Blue = CT territory</strong><br>
+                  <strong style="color:#ff7b72">Red = T territory</strong><br><br>
+                  If T pushes forward, the area behind them remains T-controlled
+                  (since no CT player is closer). Boundaries shift as players move and die.<br><br>
+                  <strong>Controls:</strong> Space = play/pause, Arrow keys = step frames.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section id="visualization-2">

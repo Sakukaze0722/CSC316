@@ -1,10 +1,10 @@
-# [Project Title Placeholder]
+# CSC316 Esports Data Visualization Project - Five Color Squad
 
 ## Overview
 [Brief description of your data story and visualization project.]
 
 ## Team Members
-- [Member 1 Name] — [Role]
+- [Ruike Hou] — [Role]
 - [Member 2 Name] — [Role]
 - [Member 3 Name] — [Role]
 - [Member 4 Name] — [Role]
@@ -17,15 +17,18 @@
 [URL to 2-minute narrated screencast]
 
 ## Process Book
-[URL to Google Doc process book]
+https://docs.google.com/document/d/1NKH5xZR5wIj18D-olm01dzN4KouP6KCWZSJSmoghnYo/edit?tab=t.811dyplrep1e#heading=h.1em731hdludi
 
 ## Data
-- **Source**: [Link to data source]
+- **Source1**: https://www.hltv.org/matches/2382619/vitality-vs-the-mongolz-blasttv-austin-major-2025
+- **Description**: [2025 Austin Major Final Match - Vitality vs The MongolZ]
+
+- **Source2**: [Link to data source]
 - **Description**: [Brief description of the dataset]
 
 ## Project Structure
 ```
-CSC316-1/
+CSC316/
 ├── index.html          # Main entry point
 ├── css/
 │   └── style.css       # Stylesheets

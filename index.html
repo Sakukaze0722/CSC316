@@ -21,7 +21,7 @@
 
     <section id="visualization-1">
       <h2>Map Control Analysis</h2>
-      <p>How does territorial control shift between CT and T sides as the round progresses?</p>
+      <p>Vitality vs The MongolZ — BLAST.tv Austin Major 2025 Grand Final: How does territorial control shift between the two teams as each round progresses?</p>
       <div id="vis1" class="vis-container">
         <div class="mc-wrapper">
           <!-- Controls bar -->
@@ -76,11 +76,11 @@
               <div class="mc-alive-indicator">
                 <div class="mc-alive-team">
                   <div class="mc-alive-dot" style="background:#58a6ff"></div>
-                  <span style="color:#58a6ff">CT: <span id="mcCtAlive">5</span> alive</span>
+                  <span style="color:#58a6ff">CT (<span id="mcCtTeamName">Vitality</span>): <span id="mcCtAlive">5</span> alive</span>
                 </div>
                 <div class="mc-alive-team">
                   <div class="mc-alive-dot" style="background:#ff7b72"></div>
-                  <span style="color:#ff7b72">T: <span id="mcTAlive">5</span> alive</span>
+                  <span style="color:#ff7b72">T (<span id="mcTTeamName">The MongolZ</span>): <span id="mcTAlive">5</span> alive</span>
                 </div>
               </div>
             </div>
@@ -129,6 +129,24 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="heatmap-section">
+      <h2>Team Movement Heatmaps</h2>
+      <p>Player positioning patterns for each team on CT and T sides — Vitality vs The MongolZ, BLAST.tv Austin Major 2025.</p>
+      <div class="hm-map-tabs">
+        <div class="hm-map-tab active" data-map="de_mirage">Mirage</div>
+        <div class="hm-map-tab" data-map="de_dust2">Dust II</div>
+        <div class="hm-map-tab" data-map="de_inferno">Inferno</div>
+      </div>
+      <div class="hm-grid hm-grid-2" id="hmGrid">
+        <div class="hm-card">
+          <img id="hmCombo1" src="output/heatmaps_combined/de_mirage_vitality_ct_mongolz_t.png" alt="Vitality CT vs MongolZ T">
+        </div>
+        <div class="hm-card">
+          <img id="hmCombo2" src="output/heatmaps_combined/de_mirage_vitality_t_mongolz_ct.png" alt="Vitality T vs MongolZ CT">
         </div>
       </div>
     </section>

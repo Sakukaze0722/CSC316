@@ -32,6 +32,16 @@ function initVis2() {
   const MAP_PX = 1024;
   const DISPLAY = 560;
 
+  // Team side mapping: Vitality starts CT on all maps, swap at round 12
+  const HALFTIME_ROUND = 12;
+  function getTeamNames(roundNum) {
+    if (roundNum < HALFTIME_ROUND) {
+      return { ct: "Vitality", t: "The MongolZ" };
+    } else {
+      return { ct: "The MongolZ", t: "Vitality" };
+    }
+  }
+
   // State
   let currentMap = "de_mirage";
   let mapDataCache = {};
@@ -358,6 +368,10 @@ function initVis2() {
     slider.max = currentFrames.length - 1;
     slider.value = 0;
     frameIndex = 0;
+    // Update team name labels based on round
+    const teams = getTeamNames(+roundVal);
+    document.getElementById("mcCtTeamName").textContent = teams.ct;
+    document.getElementById("mcTTeamName").textContent = teams.t;
     setFrame(0);
   }
 
@@ -420,6 +434,25 @@ function initVis2() {
   // Init
   drawLegend();
   switchMap("de_mirage");
+})();
+
+// ============================================================
+//  Heatmap Gallery — Tab Switching
+// ============================================================
+(function initHeatmapGallery() {
+  const HM_BASE = "output/heatmaps_combined/";
+
+  function switchHeatmap(mapName) {
+    document.querySelectorAll(".hm-map-tab").forEach(tab => {
+      tab.classList.toggle("active", tab.dataset.map === mapName);
+    });
+    document.getElementById("hmCombo1").src = HM_BASE + mapName + "_vitality_ct_mongolz_t.png";
+    document.getElementById("hmCombo2").src = HM_BASE + mapName + "_vitality_t_mongolz_ct.png";
+  }
+
+  document.querySelectorAll(".hm-map-tab").forEach(tab => {
+    tab.addEventListener("click", () => switchHeatmap(tab.dataset.map));
+  });
 })();
 
 // ============================================================

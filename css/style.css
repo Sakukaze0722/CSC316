@@ -229,3 +229,38 @@ svg {
 }
 
 @keyframes mc-spin { to { transform: rotate(360deg); } }
+
+/* ========================================
+   Heatmap Gallery (heatmap-section)
+   ======================================== */
+.hm-map-tabs {
+  display: flex; gap: 4px; margin-bottom: 16px;
+}
+.hm-map-tab {
+  padding: 6px 14px; background: #fff; border: 1px solid #d0d0d0;
+  border-radius: 6px; color: #555; font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.hm-map-tab:hover { background: #e8ecf0; }
+.hm-map-tab.active { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
+
+.hm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.hm-grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.hm-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.hm-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+}

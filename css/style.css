@@ -11,15 +11,15 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #333;
-  background-color: #fafafa;
+  background-color: #ffffff;
 }
 
 /* === Layout === */
 header {
   text-align: center;
   padding: 3rem 1rem 2rem;
-  background-color: #2c3e50;
-  color: #ecf0f1;
+  background-color: #1e3a5f;
+  color: #fff;
 }
 
 header h1 {
@@ -33,7 +33,7 @@ header .subtitle {
 }
 
 main {
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1rem;
 }
@@ -45,7 +45,7 @@ section {
 section h2 {
   font-size: 1.6rem;
   margin-bottom: 1rem;
-  border-bottom: 2px solid #2c3e50;
+  border-bottom: 2px solid #1e3a5f;
   padding-bottom: 0.3rem;
 }
 
@@ -54,21 +54,26 @@ section h2 {
   width: 100%;
   min-height: 400px;
   background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #aaa;
+  color: #999;
   font-size: 1.2rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.vis-container .mc-wrapper {
+  width: 100%;
 }
 
 /* === Footer === */
 footer {
   text-align: center;
   padding: 1.5rem 1rem;
-  background-color: #2c3e50;
-  color: #ecf0f1;
+  background-color: #1e3a5f;
+  color: #fff;
   font-size: 0.9rem;
 }
 
@@ -76,4 +81,186 @@ footer {
 svg {
   display: block;
   margin: 0 auto;
+}
+
+/* ========================================
+   Map Control Visualization (vis1)
+   ======================================== */
+.mc-wrapper {
+  width: 100%;
+}
+
+.mc-controls {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  justify-content: center; align-items: center;
+  padding: 14px 16px;
+  background: #f5f6f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px 8px 0 0;
+}
+.mc-control-group { display: flex; align-items: center; gap: 8px; }
+.mc-control-group label {
+  font-size: 12px; color: #666; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.mc-map-tabs { display: flex; gap: 4px; }
+.mc-map-tab {
+  padding: 6px 14px; background: #fff; border: 1px solid #d0d0d0;
+  border-radius: 6px; color: #555; font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.mc-map-tab:hover { background: #e8ecf0; }
+.mc-map-tab.active { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
+
+.mc-select, .mc-btn {
+  padding: 5px 10px; background: #fff; border: 1px solid #d0d0d0;
+  border-radius: 6px; color: #333; font-size: 13px;
+  cursor: pointer; outline: none;
+}
+.mc-select:focus { border-color: #1e3a5f; }
+.mc-btn { padding: 6px 14px; font-weight: 600; min-width: 72px; transition: all 0.15s; }
+.mc-btn:hover { background: #e8ecf0; }
+.mc-btn.playing { background: #d32f2f; border-color: #d32f2f; color: #fff; }
+
+.mc-body {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  color: #333;
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+}
+
+.mc-map-wrapper { position: relative; flex-shrink: 0; }
+.mc-map-container {
+  position: relative; width: 560px; height: 560px;
+  border-radius: 8px; overflow: hidden;
+  border: 2px solid #d0d0d0; background: #000;
+}
+.mc-map-container img {
+  width: 100%; height: 100%; display: block;
+  position: absolute; top: 0; left: 0;
+}
+#mcControlCanvas {
+  position: absolute; top: 0; left: 0;
+  width: 560px; height: 560px;
+  image-rendering: auto;
+  pointer-events: none;
+}
+#mcPlayerCanvas {
+  position: absolute; top: 0; left: 0;
+  width: 560px; height: 560px;
+  pointer-events: none;
+}
+
+.mc-slider-container { width: 560px; padding: 10px 0; }
+.mc-slider-row { display: flex; align-items: center; gap: 12px; }
+.mc-time-slider {
+  flex: 1; appearance: none; -webkit-appearance: none;
+  height: 6px; background: #ddd; border-radius: 3px; outline: none;
+}
+.mc-time-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; background: #1e3a5f;
+  border-radius: 50%; cursor: pointer; border: 2px solid #fff;
+}
+.mc-frame-label {
+  font-size: 12px; color: #888; min-width: 130px;
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+
+.mc-alive-indicator {
+  display: flex; gap: 16px; margin-top: 6px;
+  justify-content: center;
+}
+.mc-alive-team {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600;
+}
+.mc-alive-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+}
+
+.mc-side-panel { width: 260px; flex-shrink: 0; }
+.mc-panel-card {
+  background: #f8f9fa; border: 1px solid #e0e0e0;
+  border-radius: 8px; padding: 14px; margin-bottom: 14px;
+}
+.mc-panel-card h3 { font-size: 13px; color: #222; margin-bottom: 10px; font-weight: 600; }
+
+.mc-legend-bar { height: 18px; border-radius: 4px; margin-bottom: 6px; }
+.mc-legend-labels { display: flex; justify-content: space-between; font-size: 11px; color: #666; }
+
+.mc-control-bar-outer {
+  width: 100%; height: 26px; background: #e8e8e8;
+  border-radius: 4px; overflow: hidden; display: flex; margin-top: 6px;
+}
+.mc-control-bar-ct, .mc-control-bar-t {
+  height: 100%; transition: width 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff;
+}
+.mc-control-bar-ct { background: linear-gradient(90deg, #1565c0, #42a5f5); }
+.mc-control-bar-t { background: linear-gradient(90deg, #ef5350, #c62828); }
+
+.mc-stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; border-bottom: 1px solid #e8e8e8;
+}
+.mc-stat-row:last-child { border-bottom: none; }
+.mc-stat-label { font-size: 12px; color: #666; }
+.mc-stat-value { font-size: 13px; font-weight: 600; }
+.mc-stat-ct { color: #1565c0; }
+.mc-stat-t { color: #c62828; }
+.mc-stat-neutral { color: #888; }
+
+.mc-info p { font-size: 11px; color: #666; line-height: 1.6; }
+
+.mc-loading {
+  display: flex; align-items: center; justify-content: center;
+  height: 560px; font-size: 15px; color: #888;
+}
+.mc-spinner {
+  width: 22px; height: 22px;
+  border: 3px solid #ddd; border-top-color: #1e3a5f;
+  border-radius: 50%; animation: mc-spin 0.8s linear infinite; margin-right: 10px;
+}
+
+@keyframes mc-spin { to { transform: rotate(360deg); } }
+
+/* ========================================
+   Heatmap Gallery (heatmap-section)
+   ======================================== */
+.hm-map-tabs {
+  display: flex; gap: 4px; margin-bottom: 16px;
+}
+.hm-map-tab {
+  padding: 6px 14px; background: #fff; border: 1px solid #d0d0d0;
+  border-radius: 6px; color: #555; font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.hm-map-tab:hover { background: #e8ecf0; }
+.hm-map-tab.active { background: #1e3a5f; border-color: #1e3a5f; color: #fff; }
+
+.hm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.hm-grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.hm-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1a1a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.hm-card img {
+  width: 100%;
+  height: auto;
+  display: block;
 }

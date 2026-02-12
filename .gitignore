@@ -90,6 +90,9 @@ data/*.hdf5
 data/*.pkl
 data/*.pickle
 
+# Raw demo files (too large for git)
+data/raw/
+
 # But keep small sample data and .gitkeep
 !data/.gitkeep
 !data/sample.*

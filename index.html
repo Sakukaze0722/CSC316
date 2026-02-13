@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Esports Data Dashboard — Five Color Squad</title>
+  <title>CSC316 — Five Color Squad</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -12,126 +12,285 @@
 <body class="dashboard-body" data-theme="dark">
   <canvas id="particlesCanvas" class="particles-canvas" aria-hidden="true"></canvas>
   <div id="themeSweep" class="theme-sweep" aria-hidden="true"></div>
-  <!-- Top navigation -->
+
+  <!-- Site Header: Title + Sound/Theme toggles -->
   <header class="dashboard-header">
     <div class="header-inner">
-      <h1 class="dashboard-title">Esports Data Dashboard</h1>
+      <h1 class="dashboard-title">CSC316 Five Color Squad</h1>
       <div class="header-actions">
         <button class="sound-toggle muted" id="soundToggle" title="Sound toggle (muted by default)" aria-label="Sound toggle">🔇</button>
         <div class="theme-toggle" id="themeToggle" title="Switch day/night mode">
           <span class="theme-icon theme-sun">☀</span>
           <span class="theme-icon theme-moon">☽</span>
         </div>
-        <div class="game-toggle">
-          <button class="game-btn active" data-game="cs">
-            <span class="game-icon game-icon-cs" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <circle cx="12" cy="12" r="8"/>
-                <line x1="12" y1="2" x2="12" y2="6"/>
-                <line x1="12" y1="18" x2="12" y2="22"/>
-                <line x1="2" y1="12" x2="6" y2="12"/>
-                <line x1="18" y1="12" x2="22" y2="12"/>
-                <circle cx="12" cy="12" r="2"/>
-              </svg>
-            </span>
-            Counter-Strike
-          </button>
-          <button class="game-btn" data-game="dota2">
-            <span class="game-icon game-icon-dota" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2L3 7v6c0 5 4 8.5 9 9.5 5-1 9-4.5 9-9.5V7L12 2z"/>
-                <path d="M12 9v6M9 12h6"/>
-              </svg>
-            </span>
-            DOTA 2
-          </button>
-        </div>
       </div>
     </div>
     <div class="dynamic-status-bar" id="dynamicStatusBar"></div>
   </header>
 
-  <!-- Main section: world map -->
-  <main class="dashboard-main">
-    <div class="map-wrapper">
-      <div class="map-info-bar">
-        <span class="current-game" id="currentGameLabel">Counter-Strike</span>
-        <span class="hint">Click a country to explore regional esports data</span>
+  <!-- ============================================================
+       Visualization 1: Esports World Map Dashboard
+       ============================================================ -->
+  <div class="vis-block" id="vis1Section">
+    <div class="vis-block-header">
+      <div class="vis-block-title">
+        <h2>Esports World Map</h2>
+        <p>Explore regional esports data across Counter-Strike and DOTA 2.</p>
       </div>
-      <div id="worldMap" class="world-map-container loading">
-        <div id="mapFocusOverlay" class="map-focus-overlay" aria-hidden="true"></div>
-        <div class="map-loading">
-          <div class="map-spinner"></div>
-          <span>Loading world map...</span>
-        </div>
+      <div class="game-toggle">
+        <button class="game-btn active" data-game="cs">
+          <span class="game-icon game-icon-cs" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="12" cy="12" r="8"/>
+              <line x1="12" y1="2" x2="12" y2="6"/>
+              <line x1="12" y1="18" x2="12" y2="22"/>
+              <line x1="2" y1="12" x2="6" y2="12"/>
+              <line x1="18" y1="12" x2="22" y2="12"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+          </span>
+          Counter-Strike
+        </button>
+        <button class="game-btn" data-game="dota2">
+          <span class="game-icon game-icon-dota" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L3 7v6c0 5 4 8.5 9 9.5 5-1 9-4.5 9-9.5V7L12 2z"/>
+              <path d="M12 9v6M9 12h6"/>
+            </svg>
+          </span>
+          DOTA 2
+        </button>
       </div>
-      <div class="country-tooltip" id="countryTooltip">
-        <div class="tooltip-title" id="tooltipTitle">Unknown</div>
-        <div class="tooltip-sub" id="tooltipSub">No data yet</div>
-      </div>
-      <div class="team-hover-menu" id="teamHoverMenu"></div>
     </div>
 
-    <!-- Country detail panel (shown after click) -->
-    <aside class="detail-panel collapsed" id="detailPanel">
-      <div class="detail-panel-inner">
-        <button class="detail-close" id="detailClose">&times;</button>
-        <h3 class="detail-title" id="detailCountryName">—</h3>
-        <div class="achievement-track" id="achievementTrack"></div>
-        <div class="detail-content" id="detailContent">
-          <div class="empty-state">
-            <svg viewBox="0 0 120 120" aria-hidden="true">
-              <circle cx="60" cy="60" r="48" class="empty-circle"></circle>
-              <path d="M30 70 L55 46 L68 60 L90 38" class="empty-line"></path>
-              <circle cx="30" cy="70" r="3"></circle>
-              <circle cx="55" cy="46" r="3"></circle>
-              <circle cx="68" cy="60" r="3"></circle>
-              <circle cx="90" cy="38" r="3"></circle>
-            </svg>
-            <p class="detail-placeholder">Select a country to view regional performance and trends</p>
+    <main class="dashboard-main">
+      <div class="map-wrapper">
+        <div id="worldMap" class="world-map-container loading">
+          <div id="mapFocusOverlay" class="map-focus-overlay" aria-hidden="true"></div>
+          <div class="map-loading">
+            <div class="map-spinner"></div>
+            <span>Loading world map...</span>
+          </div>
+        </div>
+        <div class="country-tooltip" id="countryTooltip">
+          <div class="tooltip-title" id="tooltipTitle">Unknown</div>
+          <div class="tooltip-sub" id="tooltipSub">No data yet</div>
+        </div>
+        <div class="team-hover-menu" id="teamHoverMenu"></div>
+      </div>
+
+      <!-- Country detail panel (shown after click) -->
+      <aside class="detail-panel collapsed" id="detailPanel">
+        <div class="detail-panel-inner">
+          <button class="detail-close" id="detailClose">&times;</button>
+          <h3 class="detail-title" id="detailCountryName">—</h3>
+          <div class="achievement-track" id="achievementTrack"></div>
+          <div class="detail-content" id="detailContent">
+            <div class="empty-state">
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="48" class="empty-circle"></circle>
+                <path d="M30 70 L55 46 L68 60 L90 38" class="empty-line"></path>
+                <circle cx="30" cy="70" r="3"></circle>
+                <circle cx="55" cy="46" r="3"></circle>
+                <circle cx="68" cy="60" r="3"></circle>
+                <circle cx="90" cy="38" r="3"></circle>
+              </svg>
+              <p class="detail-placeholder">Select a country to view regional performance and trends</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <section class="story-section" id="storySection">
+      <h2>Story Mode</h2>
+      <div class="story-cards" id="storyCards">
+        <article class="story-card active" data-game="cs">
+          <h3>Tactical Pace Differences</h3>
+          <p>In CS, map control and early utility exchanges often determine mid-round execution quality.</p>
+        </article>
+        <article class="story-card" data-game="cs">
+          <h3>Regional Playstyle Signatures</h3>
+          <p>Teams from different regions tend to show stable preferences in default setups and retake routes.</p>
+        </article>
+        <article class="story-card" data-game="dota2">
+          <h3>Laning Pressure and Resource Allocation</h3>
+          <p>In DOTA 2, the first ten minutes often shape mid-to-late map control and vision initiative.</p>
+        </article>
+        <article class="story-card" data-game="dota2">
+          <h3>Teamfight Trigger Windows</h3>
+          <p>Key cooldown timings and high-ground vision are core variables behind teamfight win rates.</p>
+        </article>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================================================
+       Visualization 2: CS2 Map Control & Heatmaps
+       ============================================================ -->
+  <div class="analysis-content" id="vis2Section">
+    <div class="analysis-header">
+      <h2>CS2 Map Control &amp; Heatmaps</h2>
+      <p>Vitality vs The MongolZ — BLAST.tv Austin Major 2025 Grand Final</p>
+    </div>
+
+    <section id="mapControlSection">
+      <h2>Map Control Analysis</h2>
+      <p>How does territorial control shift between the two teams as each round progresses?</p>
+      <div id="vis1" class="vis-container">
+        <div class="mc-wrapper">
+          <!-- Controls bar -->
+          <div class="mc-controls">
+            <div class="mc-control-group">
+              <label>Map</label>
+              <div class="mc-map-tabs">
+                <div class="mc-map-tab active" data-map="de_mirage">Mirage</div>
+                <div class="mc-map-tab" data-map="de_dust2">Dust II</div>
+                <div class="mc-map-tab" data-map="de_inferno">Inferno</div>
+              </div>
+            </div>
+            <div class="mc-control-group">
+              <label>Round</label>
+              <select class="mc-select" id="mcRoundSelect"></select>
+            </div>
+            <div class="mc-control-group">
+              <button class="mc-btn" id="mcPlayBtn">&#9654; Play</button>
+            </div>
+            <div class="mc-control-group">
+              <label>Speed</label>
+              <select class="mc-select" id="mcSpeedSelect">
+                <option value="200">0.5x</option>
+                <option value="100" selected>1x</option>
+                <option value="50">2x</option>
+                <option value="25">4x</option>
+              </select>
+            </div>
+            <div class="mc-control-group">
+              <label>Opacity</label>
+              <select class="mc-select" id="mcOpacitySelect">
+                <option value="0.45">Low</option>
+                <option value="0.6" selected>Medium</option>
+                <option value="0.75">High</option>
+              </select>
+            </div>
+          </div>
+          <!-- Main body -->
+          <div class="mc-body">
+            <div class="mc-map-wrapper">
+              <div class="mc-map-container" id="mcMapContainer">
+                <img id="mcRadarImg" src="output/map_control/de_mirage.png" alt="Radar map">
+                <canvas id="mcControlCanvas" width="128" height="128"></canvas>
+                <canvas id="mcPlayerCanvas" width="560" height="560"></canvas>
+              </div>
+              <div class="mc-slider-container">
+                <div class="mc-slider-row">
+                  <input type="range" class="mc-time-slider" id="mcTimeSlider" min="0" max="100" value="0">
+                  <span class="mc-frame-label" id="mcFrameLabel">Frame 0 / 0</span>
+                </div>
+              </div>
+              <div class="mc-alive-indicator">
+                <div class="mc-alive-team">
+                  <div class="mc-alive-dot" style="background:#58a6ff"></div>
+                  <span style="color:#58a6ff">CT (<span id="mcCtTeamName">Vitality</span>): <span id="mcCtAlive">5</span> alive</span>
+                </div>
+                <div class="mc-alive-team">
+                  <div class="mc-alive-dot" style="background:#ff7b72"></div>
+                  <span style="color:#ff7b72">T (<span id="mcTTeamName">The MongolZ</span>): <span id="mcTAlive">5</span> alive</span>
+                </div>
+              </div>
+            </div>
+            <!-- Side panel -->
+            <div class="mc-side-panel">
+              <div class="mc-panel-card">
+                <h3>Control Legend</h3>
+                <div class="mc-legend-bar" id="mcLegendBar"></div>
+                <div class="mc-legend-labels">
+                  <span>T Control</span>
+                  <span>Contested</span>
+                  <span>CT Control</span>
+                </div>
+              </div>
+              <div class="mc-panel-card">
+                <h3>Map Control</h3>
+                <div class="mc-control-bar-outer">
+                  <div class="mc-control-bar-ct" id="mcCtBar">50%</div>
+                  <div class="mc-control-bar-t" id="mcTBar">50%</div>
+                </div>
+                <div style="height: 10px"></div>
+                <div class="mc-stat-row">
+                  <span class="mc-stat-label">CT Territory</span>
+                  <span class="mc-stat-value mc-stat-ct" id="mcCtPctLabel">50%</span>
+                </div>
+                <div class="mc-stat-row">
+                  <span class="mc-stat-label">T Territory</span>
+                  <span class="mc-stat-value mc-stat-t" id="mcTPctLabel">50%</span>
+                </div>
+                <div class="mc-stat-row">
+                  <span class="mc-stat-label">Contested</span>
+                  <span class="mc-stat-value mc-stat-neutral" id="mcNeutralPctLabel">0%</span>
+                </div>
+              </div>
+              <div class="mc-panel-card mc-info">
+                <h3>How It Works</h3>
+                <p>
+                  Territory is computed using <strong>Voronoi nearest-player distance</strong>:
+                  each point on the map belongs to whichever team's closest alive player is nearer.<br><br>
+                  <strong style="color:#58a6ff">Blue = CT territory</strong><br>
+                  <strong style="color:#ff7b72">Red = T territory</strong><br><br>
+                  If T pushes forward, the area behind them remains T-controlled
+                  (since no CT player is closer). Boundaries shift as players move and die.<br><br>
+                  <strong>Controls:</strong> Space = play/pause, Arrow keys = step frames.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </aside>
-  </main>
+    </section>
 
-  <section class="story-section" id="storySection">
-    <h2>Story Mode</h2>
-    <div class="story-cards" id="storyCards">
-      <article class="story-card active" data-game="cs">
-        <h3>Tactical Pace Differences</h3>
-        <p>In CS, map control and early utility exchanges often determine mid-round execution quality.</p>
-      </article>
-      <article class="story-card" data-game="cs">
-        <h3>Regional Playstyle Signatures</h3>
-        <p>Teams from different regions tend to show stable preferences in default setups and retake routes.</p>
-      </article>
-      <article class="story-card" data-game="dota2">
-        <h3>Laning Pressure and Resource Allocation</h3>
-        <p>In DOTA 2, the first ten minutes often shape mid-to-late map control and vision initiative.</p>
-      </article>
-      <article class="story-card" data-game="dota2">
-        <h3>Teamfight Trigger Windows</h3>
-        <p>Key cooldown timings and high-ground vision are core variables behind teamfight win rates.</p>
-      </article>
-    </div>
-  </section>
+    <section id="heatmap-section">
+      <h2>Team Movement Heatmaps</h2>
+      <p>Player positioning patterns for each team on CT and T sides — Vitality vs The MongolZ, BLAST.tv Austin Major 2025.</p>
+      <div class="hm-map-tabs">
+        <div class="hm-map-tab active" data-map="de_mirage">Mirage</div>
+        <div class="hm-map-tab" data-map="de_dust2">Dust II</div>
+        <div class="hm-map-tab" data-map="de_inferno">Inferno</div>
+      </div>
+      <div class="hm-grid hm-grid-2" id="hmGrid">
+        <div class="hm-card">
+          <img id="hmCombo1" src="output/heatmaps_combined/de_mirage_vitality_ct_mongolz_t.png" alt="Vitality CT vs MongolZ T">
+        </div>
+        <div class="hm-card">
+          <img id="hmCombo2" src="output/heatmaps_combined/de_mirage_vitality_t_mongolz_ct.png" alt="Vitality T vs MongolZ CT">
+        </div>
+      </div>
+    </section>
+  </div>
 
-  <section class="embedded-analysis-section" id="embeddedAnalysisSection">
-    <div class="embedded-analysis-header">
-      <h2>CS2 Detailed Analysis</h2>
-      <p>Scroll down to explore the full map-control and heatmap analysis page inside this dashboard.</p>
+  <!-- ============================================================
+       Visualization 3: Placeholder
+       ============================================================ -->
+  <div class="analysis-content" id="vis3Section">
+    <div class="analysis-header">
+      <h2>Visualization 3</h2>
+      <p>[Description placeholder]</p>
     </div>
-    <div class="embedded-analysis-frame-wrap">
-      <iframe
-        class="embedded-analysis-frame"
-        src="cs-detail.html"
-        title="CS2 Detailed Analysis"
-        loading="lazy"
-      ></iframe>
-    </div>
-  </section>
+    <section>
+      <div id="vis3" class="vis-container"></div>
+    </section>
+  </div>
 
+  <!-- ============================================================
+       Conclusion
+       ============================================================ -->
+  <div class="analysis-content" id="conclusionSection">
+    <section id="conclusion">
+      <h2>Conclusion</h2>
+      <p>[Your conclusion and takeaways go here.]</p>
+    </section>
+  </div>
+
+  <!-- Ranking drawer: fixed right-side overlay -->
   <div class="rank-drawer" id="rankDrawer">
     <button class="drawer-handle" id="drawerHandle" aria-label="Expand ranking drawer">Top Countries</button>
     <div class="drawer-content">
@@ -144,6 +303,7 @@
     <p>CSC316 — Five Color Squad</p>
   </footer>
 
+  <script src="js/main.js"></script>
   <script src="js/dashboard.js"></script>
 </body>
 </html>

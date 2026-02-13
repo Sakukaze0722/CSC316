@@ -4,6 +4,10 @@
    ============================================ */
 
 /* ---------- CSS Variables: Dark Mode (default) ---------- */
+body.dashboard-body {
+  overflow-x: hidden;
+}
+
 body.dashboard-body,
 body.dashboard-body[data-theme="dark"] {
   --dbg-bg: #0a0f1a;
@@ -98,7 +102,7 @@ body.dashboard-body::before {
   position: relative;
   z-index: 10;
   background: var(--dbg-header-bg);
-  padding: 1rem 2rem;
+  padding: 1.5rem 2rem;
   border-bottom: 1px solid var(--dbg-header-border);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(12px);
@@ -114,9 +118,9 @@ body.dashboard-body[data-theme="dark"] .dashboard-header {
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .header-actions {
@@ -173,7 +177,7 @@ body[data-theme="light"] .theme-moon {
 }
 
 .dashboard-title {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   background: var(--dbg-title-gradient);
@@ -259,7 +263,7 @@ body[data-theme="light"] .theme-moon {
   position: relative;
   z-index: 1;
   display: flex;
-  min-height: calc(100vh - 140px);
+  min-height: 520px;
   background: var(--dbg-main-bg);
   transition: background 0.4s;
 }
@@ -267,7 +271,7 @@ body[data-theme="light"] .theme-moon {
 .map-wrapper {
   flex: 1;
   position: relative;
-  padding: 1.5rem;
+  padding: 0.75rem 1.5rem 1rem;
   display: flex;
   flex-direction: column;
 }
@@ -275,9 +279,9 @@ body[data-theme="light"] .theme-moon {
 .map-info-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  padding: 0.5rem 0;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+  padding: 0;
 }
 
 .current-game {
@@ -722,7 +726,9 @@ path.country.selected-pulse {
 .story-section {
   position: relative;
   z-index: 1;
-  padding: 1.2rem 1.5rem 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem 1.25rem;
 }
 
 .story-section h2 {
@@ -794,34 +800,58 @@ path.country.selected-pulse {
 
 .rank-drawer {
   position: fixed;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%) translateY(calc(100% - 38px));
-  width: min(92vw, 680px);
-  z-index: 15;
-  transition: transform 0.35s ease;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 280px;
+  z-index: 100;
+  transform: translateX(calc(100% - 32px));
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  pointer-events: none;
 }
 
 .rank-drawer.open {
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(0);
+}
+
+.rank-drawer.open .drawer-handle {
+  border-radius: 0;
+  border-right: none;
 }
 
 .drawer-handle {
-  width: 100%;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
   border: 1px solid var(--dbg-panel-border);
-  border-bottom: none;
-  border-radius: 14px 14px 0 0;
+  border-right: none;
+  border-radius: 10px 0 0 10px;
   background: var(--dbg-panel-bg);
   color: var(--dbg-panel-text);
-  height: 38px;
+  padding: 12px 6px;
   cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+  flex-shrink: 0;
+}
+
+.drawer-handle:hover {
+  background: var(--dbg-toggle-bg);
 }
 
 .drawer-content {
+  flex: 1;
   border: 1px solid var(--dbg-panel-border);
-  border-radius: 0 0 14px 14px;
+  border-radius: 0;
   background: var(--dbg-panel-bg);
-  padding: 10px 12px 12px;
+  backdrop-filter: blur(12px);
+  padding: 14px 12px 12px;
+  overflow-y: auto;
+  pointer-events: auto;
 }
 
 .drawer-content h3 {
@@ -834,15 +864,16 @@ path.country.selected-pulse {
   margin: 0;
   padding-left: 1.1rem;
   color: var(--dbg-panel-text);
-  max-height: 170px;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .drawer-list li {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  padding: 3px 0;
+  padding: 4px 0;
+  font-size: 0.88rem;
 }
 
 .team-hover-menu {

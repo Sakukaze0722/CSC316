@@ -98,7 +98,6 @@
   const particlesCanvas = document.getElementById("particlesCanvas");
   const headerEl = document.querySelector(".dashboard-header");
   const mapWrapperEl = document.querySelector(".map-wrapper");
-  const embeddedAnalysisFrame = document.querySelector(".embedded-analysis-frame");
 
   function getGameColors() {
     return THEME_COLORS[currentTheme][currentGame];
@@ -290,7 +289,7 @@
         currentGame = game;
         document.querySelectorAll(".game-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        gameLabel.textContent = game === "cs" ? "Counter-Strike" : "DOTA 2";
+        if (gameLabel) gameLabel.textContent = game === "cs" ? "Counter-Strike" : "DOTA 2";
         mapContainer.classList.add("switching");
         setTimeout(() => mapContainer.classList.remove("switching"), 280);
         hideTeamHoverMenu();
@@ -324,16 +323,7 @@
   }
 
   function initParallax() {
-    headerEl.classList.add("parallax");
-    mapWrapperEl.classList.add("parallax");
-    window.addEventListener("mousemove", (e) => {
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
-      const dx = (e.clientX - cx) / cx;
-      const dy = (e.clientY - cy) / cy;
-      headerEl.style.transform = `translate(${dx * 4}px, ${dy * 2}px)`;
-      mapWrapperEl.style.transform = `translate(${dx * 6}px, ${dy * 4}px)`;
-    });
+    // Parallax disabled — no mouse-based movement
   }
 
   function initParticles() {
@@ -666,31 +656,6 @@
     });
   }
 
-  function initEmbeddedAnalysisFrame() {
-    if (!embeddedAnalysisFrame) return;
-    const resizeFrame = () => {
-      try {
-        const doc = embeddedAnalysisFrame.contentWindow?.document;
-        if (!doc) return;
-        const h = Math.max(
-          doc.body?.scrollHeight || 0,
-          doc.documentElement?.scrollHeight || 0
-        );
-        if (h > 0) embeddedAnalysisFrame.style.height = `${h + 16}px`;
-      } catch (_) {
-        // Ignore cross-document access errors; same-origin should work locally.
-      }
-    };
-
-    embeddedAnalysisFrame.addEventListener("load", () => {
-      resizeFrame();
-      setTimeout(resizeFrame, 250);
-      setTimeout(resizeFrame, 700);
-    });
-    window.addEventListener("resize", () => {
-      setTimeout(resizeFrame, 150);
-    });
-  }
 
   async function init() {
     initThemeToggle();
@@ -703,7 +668,6 @@
     initStoryObserver();
     initParallax();
     initParticles();
-    initEmbeddedAnalysisFrame();
     updateStatusBar();
     renderStoryModeVisibility();
     renderAchievements();

@@ -4,7 +4,7 @@
 //  Visualization 2 — Placeholder
 // ============================================================
 function initVis2() {
-  const container = d3.select('#vis2');
+  const container = d3.select('#vis3');
   container.html('');
   const svg = container
     .append('svg')
@@ -14,7 +14,7 @@ function initVis2() {
     .attr('x', 450).attr('y', 200)
     .attr('text-anchor', 'middle')
     .attr('fill', '#aaa').attr('font-size', '1.2rem')
-    .text('Visualization 2 — Coming Soon');
+    .text('Visualization 3 — Coming Soon');
 }
 
 // ============================================================
@@ -333,7 +333,7 @@ function initVis2() {
     loading.style.position = "absolute";
     loading.style.top = "0"; loading.style.left = "0";
     loading.style.width = "100%"; loading.style.zIndex = "10";
-    loading.style.background = "rgba(255,255,255,0.85)";
+    loading.style.background = "var(--vis-loading-bg)";
     container.appendChild(loading);
     const resp = await fetch(`${DATA_BASE}${mapName}_control.json`);
     const data = await resp.json();

@@ -10,12 +10,15 @@
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
 <body class="dashboard-body" data-theme="dark">
-  <!-- 顶部游戏切换栏 -->
+  <canvas id="particlesCanvas" class="particles-canvas" aria-hidden="true"></canvas>
+  <div id="themeSweep" class="theme-sweep" aria-hidden="true"></div>
+  <!-- Top navigation -->
   <header class="dashboard-header">
     <div class="header-inner">
       <h1 class="dashboard-title">Esports Data Dashboard</h1>
       <div class="header-actions">
-        <div class="theme-toggle" id="themeToggle" title="切换日/夜间模式">
+        <button class="sound-toggle muted" id="soundToggle" title="Sound toggle (muted by default)" aria-label="Sound toggle">🔇</button>
+        <div class="theme-toggle" id="themeToggle" title="Switch day/night mode">
           <span class="theme-icon theme-sun">☀</span>
           <span class="theme-icon theme-moon">☽</span>
         </div>
@@ -45,35 +48,97 @@
         </div>
       </div>
     </div>
+    <div class="dynamic-status-bar" id="dynamicStatusBar"></div>
   </header>
 
-  <!-- 主内容区：世界地图 -->
+  <!-- Main section: world map -->
   <main class="dashboard-main">
     <div class="map-wrapper">
       <div class="map-info-bar">
         <span class="current-game" id="currentGameLabel">Counter-Strike</span>
-        <span class="hint">点击国家查看该地区的电竞数据</span>
+        <span class="hint">Click a country to explore regional esports data</span>
       </div>
       <div id="worldMap" class="world-map-container loading">
+        <div id="mapFocusOverlay" class="map-focus-overlay" aria-hidden="true"></div>
         <div class="map-loading">
           <div class="map-spinner"></div>
-          <span>加载世界地图...</span>
+          <span>Loading world map...</span>
         </div>
       </div>
-      <div class="country-tooltip" id="countryTooltip"></div>
+      <div class="country-tooltip" id="countryTooltip">
+        <div class="tooltip-title" id="tooltipTitle">Unknown</div>
+        <div class="tooltip-sub" id="tooltipSub">No data yet</div>
+      </div>
+      <div class="team-hover-menu" id="teamHoverMenu"></div>
     </div>
 
-    <!-- 国家详情面板（点击国家后显示） -->
+    <!-- Country detail panel (shown after click) -->
     <aside class="detail-panel collapsed" id="detailPanel">
       <div class="detail-panel-inner">
         <button class="detail-close" id="detailClose">&times;</button>
         <h3 class="detail-title" id="detailCountryName">—</h3>
+        <div class="achievement-track" id="achievementTrack"></div>
         <div class="detail-content" id="detailContent">
-          <p class="detail-placeholder">选择国家后将显示该地区的电竞数据</p>
+          <div class="empty-state">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="48" class="empty-circle"></circle>
+              <path d="M30 70 L55 46 L68 60 L90 38" class="empty-line"></path>
+              <circle cx="30" cy="70" r="3"></circle>
+              <circle cx="55" cy="46" r="3"></circle>
+              <circle cx="68" cy="60" r="3"></circle>
+              <circle cx="90" cy="38" r="3"></circle>
+            </svg>
+            <p class="detail-placeholder">Select a country to view regional performance and trends</p>
+          </div>
         </div>
       </div>
     </aside>
   </main>
+
+  <section class="story-section" id="storySection">
+    <h2>Story Mode</h2>
+    <div class="story-cards" id="storyCards">
+      <article class="story-card active" data-game="cs">
+        <h3>Tactical Pace Differences</h3>
+        <p>In CS, map control and early utility exchanges often determine mid-round execution quality.</p>
+      </article>
+      <article class="story-card" data-game="cs">
+        <h3>Regional Playstyle Signatures</h3>
+        <p>Teams from different regions tend to show stable preferences in default setups and retake routes.</p>
+      </article>
+      <article class="story-card" data-game="dota2">
+        <h3>Laning Pressure and Resource Allocation</h3>
+        <p>In DOTA 2, the first ten minutes often shape mid-to-late map control and vision initiative.</p>
+      </article>
+      <article class="story-card" data-game="dota2">
+        <h3>Teamfight Trigger Windows</h3>
+        <p>Key cooldown timings and high-ground vision are core variables behind teamfight win rates.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="embedded-analysis-section" id="embeddedAnalysisSection">
+    <div class="embedded-analysis-header">
+      <h2>CS2 Detailed Analysis</h2>
+      <p>Scroll down to explore the full map-control and heatmap analysis page inside this dashboard.</p>
+    </div>
+    <div class="embedded-analysis-frame-wrap">
+      <iframe
+        class="embedded-analysis-frame"
+        src="cs-detail.html"
+        title="CS2 Detailed Analysis"
+        loading="lazy"
+      ></iframe>
+    </div>
+  </section>
+
+  <div class="rank-drawer" id="rankDrawer">
+    <button class="drawer-handle" id="drawerHandle" aria-label="Expand ranking drawer">Top Countries</button>
+    <div class="drawer-content">
+      <h3 id="drawerTitle">Counter-Strike Top Countries</h3>
+      <ol id="drawerList" class="drawer-list"></ol>
+    </div>
+  </div>
 
   <footer class="dashboard-footer">
     <p>CSC316 — Five Color Squad</p>

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CSC316 — Five Color Squad</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/style.css?v=4">
+  <link rel="stylesheet" href="css/dashboard.css?v=4">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
@@ -389,6 +389,19 @@
               <div class="ul-map-container" id="ulMapContainer">
                 <img id="ulRadarImg" src="data/maps/de_mirage.png" alt="Radar map">
                 <canvas id="ulTrailCanvas" width="1024" height="1024"></canvas>
+                <canvas id="ulHotspotCanvas" width="1024" height="1024"></canvas>
+              </div>
+              <!-- Tooltip for grenade hotspot hover -->
+              <div class="vis-tooltip" id="ulTooltip" style="display:none;">
+                <div class="vis-tooltip-header" id="ulTooltipHeader">Hotspot</div>
+                <div class="vis-tooltip-body">
+                  <div class="vis-tooltip-pie-row">
+                    <svg id="ulTooltipPie" width="80" height="80" viewBox="0 0 80 80"></svg>
+                    <div class="vis-tooltip-pie-legend" id="ulTooltipLegend"></div>
+                  </div>
+                  <div class="vis-tooltip-divider"></div>
+                  <div class="vis-tooltip-stats" id="ulTooltipStats"></div>
+                </div>
               </div>
               <!-- Legend below map -->
               <div class="ul-legend">
@@ -501,6 +514,21 @@
               <div class="kv-map-container" id="kvMapContainer">
                 <img id="kvRadarImg" src="data/maps/de_mirage.png" alt="Radar map">
                 <canvas id="kvCanvas" width="1024" height="1024"></canvas>
+                <canvas id="kvHoverCanvas" width="1024" height="1024" style="pointer-events:none;"></canvas>
+              </div>
+              <!-- Tooltip for kill hover -->
+              <div class="vis-tooltip" id="kvTooltip" style="display:none;">
+                <div class="vis-tooltip-header" id="kvTooltipHeader">Kill Zone</div>
+                <div class="vis-tooltip-body">
+                  <div class="vis-tooltip-stats" id="kvTooltipStats"></div>
+                  <div class="vis-tooltip-divider"></div>
+                  <div class="vis-tooltip-pie-row">
+                    <svg id="kvTooltipPie" width="80" height="80" viewBox="0 0 80 80"></svg>
+                    <div class="vis-tooltip-pie-legend" id="kvTooltipLegend"></div>
+                  </div>
+                  <div class="vis-tooltip-divider"></div>
+                  <div class="vis-tooltip-kills" id="kvTooltipKills"></div>
+                </div>
               </div>
               <!-- Legend -->
               <div class="kv-legend">
@@ -589,8 +617,8 @@
     <p>CSC316 — Five Color Squad</p>
   </footer>
 
-  <script src="js/main.js"></script>
-  <script src="js/dashboard.js"></script>
+  <script src="js/main.js?v=4"></script>
+  <script src="js/dashboard.js?v=4"></script>
 
   <script>
     // Set up Intersection Observer for fade-in sections

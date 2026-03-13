@@ -329,9 +329,10 @@ body {
 .mc-map-container {
   position: relative; width: 560px; height: 560px;
   border-radius: 8px; overflow: hidden;
-  border: 2px solid var(--vis-border-light); background: #000;
+  border: 2px solid var(--vis-border-light); background: #fff;
   transition: border-color 0.4s;
 }
+[data-theme="dark"] .mc-map-container { background: #000; }
 .mc-map-container img {
   width: 100%; height: 100%; display: block;
   position: absolute; top: 0; left: 0;
@@ -574,21 +575,24 @@ body {
   transition: background 0.4s, border-color 0.4s;
 }
 
-.ul-map-area { flex-shrink: 0; }
+.ul-map-area { flex-shrink: 0; position: relative; }
 .ul-map-container {
   position: relative; width: 560px; height: 560px;
   border-radius: 8px; overflow: hidden;
-  border: 2px solid var(--vis-border-light); background: #000;
+  border: 2px solid var(--vis-border-light); background: #fff;
   transition: border-color 0.4s;
 }
+[data-theme="dark"] .ul-map-container { background: #000; }
 .ul-map-container img {
   width: 100%; height: 100%; display: block;
   position: absolute; top: 0; left: 0;
+  pointer-events: none;
 }
 #ulTrailCanvas {
   position: absolute; top: 0; left: 0;
   width: 560px; height: 560px;
   pointer-events: none;
+  z-index: 1;
 }
 
 .ul-legend {
@@ -729,21 +733,24 @@ body {
   transition: background 0.4s, border-color 0.4s;
 }
 
-.kv-map-area { flex-shrink: 0; }
+.kv-map-area { flex-shrink: 0; position: relative; z-index: 4; }
 .kv-map-container {
   position: relative; width: 560px; height: 560px;
   border-radius: 8px; overflow: hidden;
-  border: 2px solid var(--vis-border-light); background: #000;
+  border: 2px solid var(--vis-border-light); background: #fff;
   transition: border-color 0.4s;
 }
+[data-theme="dark"] .kv-map-container { background: #000; }
 .kv-map-container img {
   width: 100%; height: 100%; display: block;
   position: absolute; top: 0; left: 0;
+  pointer-events: none;
 }
 #kvCanvas {
   position: absolute; top: 0; left: 0;
   width: 560px; height: 560px;
   pointer-events: none;
+  z-index: 1;
 }
 
 .kv-legend {
@@ -805,4 +812,124 @@ body {
 .kv-info p {
   font-size: 11px; color: var(--vis-text-muted); line-height: 1.6;
   transition: color 0.4s;
+}
+
+/* ========================================
+   Hotspot overlay canvas (vis3)
+   ======================================== */
+#ulHotspotCanvas {
+  position: absolute; top: 0; left: 0;
+  width: 560px; height: 560px;
+  pointer-events: none;
+  z-index: 2;
+}
+#kvHoverCanvas {
+  position: absolute; top: 0; left: 0;
+  width: 560px; height: 560px;
+  pointer-events: none;
+  z-index: 2;
+}
+.ul-map-container,
+.kv-map-container {
+  cursor: crosshair;
+}
+/* ========================================
+   Shared Vis Tooltip
+   ======================================== */
+.vis-tooltip {
+  position: absolute;
+  z-index: 240;
+  width: 236px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.12));
+  border: 1px solid rgba(255,255,255,0.28);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(15,23,42,0.18), inset 0 1px 0 rgba(255,255,255,0.28);
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+  color: #111827;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s ease-out, transform 0.18s ease-out;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+[data-theme="dark"] .vis-tooltip {
+  background: linear-gradient(135deg, rgba(30,41,59,0.44), rgba(15,23,42,0.28));
+  border: 1px solid rgba(148,163,184,0.22);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08);
+  color: #f8fafc;
+}
+
+.vis-tooltip-header {
+  padding: 8px 11px;
+  font-size: 11px; font-weight: 700;
+  color: #111827;
+  background: linear-gradient(135deg, rgba(255,255,255,0.44), rgba(226,232,240,0.32));
+  letter-spacing: 0.3px;
+}
+[data-theme="dark"] .vis-tooltip-header {
+  background: linear-gradient(135deg, rgba(59,130,246,0.64), rgba(37,99,235,0.52));
+  color: #f8fafc;
+}
+
+.vis-tooltip-body {
+  padding: 9px 11px;
+}
+
+.vis-tooltip-pie-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.vis-tooltip-pie-legend {
+  font-size: 10px; line-height: 1.45;
+  color: #374151;
+}
+[data-theme="dark"] .vis-tooltip-pie-legend { color: #cbd5e1; }
+.vis-tooltip-pie-legend .pie-leg-item {
+  display: flex; align-items: center; gap: 5px;
+}
+.vis-tooltip-pie-legend .pie-leg-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.vis-tooltip-pie-legend .pie-leg-pct {
+  font-weight: 700; color: #111827; min-width: 24px; text-align: right;
+}
+[data-theme="dark"] .vis-tooltip-pie-legend .pie-leg-pct { color: #f8fafc; }
+
+.vis-tooltip-divider {
+  height: 1px; background: rgba(148,163,184,0.24); margin: 8px 0;
+}
+
+.vis-tooltip-stats {
+  font-size: 10px; color: #374151; line-height: 1.55;
+}
+[data-theme="dark"] .vis-tooltip-stats { color: #cbd5e1; }
+.vis-tooltip-stats .stat-row {
+  display: flex; justify-content: space-between;
+  gap: 8px;
+}
+.vis-tooltip-stats .stat-val {
+  font-weight: 700; color: #111827;
+}
+[data-theme="dark"] .vis-tooltip-stats .stat-val { color: #f8fafc; }
+
+.vis-tooltip-kills {
+  font-size: 10px; color: #374151; line-height: 1.45;
+  max-height: 74px; overflow-y: auto;
+}
+[data-theme="dark"] .vis-tooltip-kills { color: #cbd5e1; }
+.vis-tooltip-kills .kill-entry {
+  display: flex; align-items: center; gap: 6px;
+  padding: 2px 0; border-bottom: 1px solid rgba(148,163,184,0.18);
+}
+.vis-tooltip-kills .kill-entry:last-child { border-bottom: none; }
+.vis-tooltip-kills .kill-weapon {
+  font-size: 9px; padding: 1px 4px; border-radius: 999px;
+  background: rgba(15,23,42,0.08); color: #111827;
+  font-weight: 600;
+}
+[data-theme="dark"] .vis-tooltip-kills .kill-weapon {
+  background: rgba(255,255,255,0.16);
+  color: #f8fafc;
+}
+.vis-tooltip-kills .kill-hs {
+  color: #ff1744; font-weight: 700; font-size: 9px;
 }

@@ -1,5 +1,107 @@
 // Main entry point for D3 visualizations
 
+const THEMED_RADAR_CACHE = new Map();
+
+function isDarkThemeActive() {
+  return document.body?.dataset.theme !== "light";
+}
+
+function whitenEdgeBackgroundPixels(imageData, threshold = 18) {
+  const { data, width, height } = imageData;
+  const total = width * height;
+  const dark = new Uint8Array(total);
+  const bg = new Uint8Array(total);
+  const queue = [];
+
+  for (let i = 0; i < total; i++) {
+    const a = data[i * 4 + 3];
+    if (a < 8) continue;
+    const r = data[i * 4];
+    const g = data[i * 4 + 1];
+    const b = data[i * 4 + 2];
+    const brightness = r * 0.299 + g * 0.587 + b * 0.114;
+    if (brightness < threshold) dark[i] = 1;
+  }
+
+  function enqueue(idx) {
+    if (!dark[idx] || bg[idx]) return;
+    bg[idx] = 1;
+    queue.push(idx);
+  }
+
+  for (let x = 0; x < width; x++) {
+    enqueue(x);
+    enqueue((height - 1) * width + x);
+  }
+  for (let y = 0; y < height; y++) {
+    enqueue(y * width);
+    enqueue(y * width + (width - 1));
+  }
+
+  while (queue.length) {
+    const idx = queue.pop();
+    const x = idx % width;
+    const y = Math.floor(idx / width);
+    if (x > 0) enqueue(idx - 1);
+    if (x < width - 1) enqueue(idx + 1);
+    if (y > 0) enqueue(idx - width);
+    if (y < height - 1) enqueue(idx + width);
+  }
+
+  for (let i = 0; i < total; i++) {
+    if (!bg[i]) continue;
+    const base = i * 4;
+    data[base] = 255;
+    data[base + 1] = 255;
+    data[base + 2] = 255;
+    data[base + 3] = 255;
+  }
+
+  return imageData;
+}
+
+function setThemedRadarImage(imgEl, rawSrc) {
+  if (!imgEl || !rawSrc) return Promise.resolve();
+  imgEl.dataset.rawSrc = rawSrc;
+
+  if (isDarkThemeActive()) {
+    imgEl.src = rawSrc;
+    return Promise.resolve();
+  }
+
+  const cacheKey = `${rawSrc}::light`;
+  if (THEMED_RADAR_CACHE.has(cacheKey)) {
+    imgEl.src = THEMED_RADAR_CACHE.get(cacheKey);
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      whitenEdgeBackgroundPixels(imageData);
+      ctx.putImageData(imageData, 0, 0);
+      const themedSrc = canvas.toDataURL("image/png");
+      THEMED_RADAR_CACHE.set(cacheKey, themedSrc);
+      if (imgEl.dataset.rawSrc === rawSrc && !isDarkThemeActive()) {
+        imgEl.src = themedSrc;
+      }
+      resolve();
+    };
+    img.onerror = () => {
+      imgEl.src = rawSrc;
+      resolve();
+    };
+    img.src = rawSrc;
+  });
+}
+
 // ============================================================
 //  Visualization 3 — Utility Lane Evolution
 // ============================================================
@@ -21,9 +123,18 @@
   let filters = { side: "all", match: "all", type: "all", player: "all" };
   let animRAF = null;
   let isSectionVisible = false;
+  let hotspotPulseRAF = null;
+  let currentClusters = [];
+  let hoveredCluster = null;
 
   const canvas = document.getElementById("ulTrailCanvas");
   const ctx = canvas.getContext("2d");
+  const hsCanvas = document.getElementById("ulHotspotCanvas");
+  const hsCtx = hsCanvas.getContext("2d");
+  const mapContainer = document.getElementById("ulMapContainer");
+  const ulMapArea = mapContainer.closest(".ul-map-area");
+  const tooltip = document.getElementById("ulTooltip");
+  const radarImg = document.getElementById("ulRadarImg");
 
   function getFilteredTrajectories() {
     if (!allData || !allData.maps[currentMap]) return [];
@@ -52,10 +163,12 @@
     ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     // Darken map
-    ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    ctx.restore();
+    if (isDarkThemeActive()) {
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      ctx.restore();
+    }
 
     // --- Pass 1: arcs, origin dots, moving heads (no shadowBlur) ---
     for (let i = 0; i < trajs.length; i++) {
@@ -133,15 +246,293 @@
     ctx.restore();
   }
 
+  // ── Hotspot Clustering ──
+  // Grid-based density clustering on landing positions
+  const CLUSTER_CELL = 28;
+  const CLUSTER_MIN_COUNT = 6;
+  const MAX_CLUSTERS = 6;
+  const HOTSPOT_RADIUS = 20;
+  const TYPE_COLORS_FLAT = { smoke: "#4fc3f7", flash: "#fff176", he: "#ef5350", molotov: "#ff9800" };
+
+  function computeClusters(trajs) {
+    if (trajs.length === 0) return [];
+    const grid = {};
+    for (const t of trajs) {
+      const gx = Math.floor(t.land_px / CLUSTER_CELL);
+      const gy = Math.floor(t.land_py / CLUSTER_CELL);
+      const key = gx + "," + gy;
+      if (!grid[key]) grid[key] = { gx, gy, items: [] };
+      grid[key].items.push(t);
+    }
+    // Merge neighboring cells into clusters using flood-fill
+    const visited = new Set();
+    const clusters = [];
+    for (const key of Object.keys(grid)) {
+      if (visited.has(key)) continue;
+      const queue = [key];
+      visited.add(key);
+      const merged = [];
+      while (queue.length) {
+        const cur = queue.shift();
+        merged.push(...grid[cur].items);
+        const [cx, cy] = cur.split(",").map(Number);
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            if (dx === 0 && dy === 0) continue;
+            const nk = (cx + dx) + "," + (cy + dy);
+            if (grid[nk] && !visited.has(nk)) {
+              visited.add(nk);
+              queue.push(nk);
+            }
+          }
+        }
+      }
+      if (merged.length >= CLUSTER_MIN_COUNT) {
+        const cx = merged.reduce((s, t) => s + t.land_px, 0) / merged.length;
+        const cy = merged.reduce((s, t) => s + t.land_py, 0) / merged.length;
+        const typeCounts = {};
+        for (const t of merged) typeCounts[t.type] = (typeCounts[t.type] || 0) + 1;
+        const dominantType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "smoke";
+        const tightness = merged.reduce((sum, t) => sum + Math.hypot(t.land_px - cx, t.land_py - cy), 0) / merged.length;
+        clusters.push({
+          cx,
+          cy,
+          items: merged,
+          count: merged.length,
+          dominantType,
+          tightness,
+          score: merged.length / Math.max(tightness, 10)
+        });
+      }
+    }
+    const filtered = clusters.filter(c => c.tightness < 38);
+    const picked = [];
+    filtered.sort((a, b) => b.score - a.score);
+    for (const cluster of filtered) {
+      const overlaps = picked.some(existing => Math.hypot(existing.cx - cluster.cx, existing.cy - cluster.cy) < 56);
+      if (!overlaps) picked.push(cluster);
+      if (picked.length >= MAX_CLUSTERS) break;
+    }
+    return picked;
+  }
+
+  // Draw pulsing ring indicators on hotspot canvas
+  function startHotspotPulse() {
+    if (hotspotPulseRAF) cancelAnimationFrame(hotspotPulseRAF);
+    if (currentClusters.length === 0 || filters.type === "all") { hsCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE); return; }
+
+    function draw(now) {
+      hsCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      const pulse = 0.5 + 0.5 * Math.sin(now / 600);
+      for (const c of currentClusters) {
+        const isHovered = (c === hoveredCluster);
+        const color = TYPE_COLORS_FLAT[c.dominantType] || "#58a6ff";
+        const r = HOTSPOT_RADIUS + pulse * 5;
+        const alpha = isHovered ? 0.82 : 0.28 + pulse * 0.14;
+        hsCtx.save();
+        hsCtx.globalAlpha = alpha;
+        hsCtx.strokeStyle = isHovered ? "#ffffff" : color;
+        hsCtx.lineWidth = isHovered ? 2.8 : 2;
+        hsCtx.shadowColor = color;
+        hsCtx.shadowBlur = isHovered ? 18 : 10;
+        hsCtx.beginPath();
+        hsCtx.arc(c.cx, c.cy, r, 0, Math.PI * 2);
+        hsCtx.stroke();
+        if (!isHovered) {
+          hsCtx.globalAlpha = 0.48;
+          hsCtx.fillStyle = "rgba(15,23,42,0.72)";
+          hsCtx.beginPath();
+          hsCtx.arc(c.cx, c.cy, 11, 0, Math.PI * 2);
+          hsCtx.fill();
+          hsCtx.globalAlpha = 0.96;
+          hsCtx.fillStyle = color;
+          hsCtx.font = "bold 11px sans-serif";
+          hsCtx.textAlign = "center";
+          hsCtx.textBaseline = "middle";
+          hsCtx.fillText(c.count, c.cx, c.cy);
+        }
+        hsCtx.restore();
+      }
+      hotspotPulseRAF = requestAnimationFrame(draw);
+    }
+    hotspotPulseRAF = requestAnimationFrame(draw);
+  }
+
+  function stopHotspotPulse() {
+    if (hotspotPulseRAF) { cancelAnimationFrame(hotspotPulseRAF); hotspotPulseRAF = null; }
+    hsCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  }
+
+  // ── Tooltip helpers ──
+  function buildPieSVG(svgEl, legendEl, items) {
+    const counts = {};
+    for (const t of items) counts[t.type] = (counts[t.type] || 0) + 1;
+    const total = items.length;
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const colors = { smoke: "#4fc3f7", flash: "#fff176", he: "#ef5350", molotov: "#ff9800" };
+    const labels = { smoke: "Smoke", flash: "Flash", he: "HE", molotov: "Molotov" };
+    if (total === 0) {
+      svgEl.innerHTML = "";
+      legendEl.innerHTML = "";
+      return;
+    }
+
+    let html = "";
+    const cx = 40, cy = 40, r = 36;
+    if (entries.length === 1) {
+      html = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${colors[entries[0][0]] || "#888"}"/>`;
+    } else {
+      let angle = -Math.PI / 2;
+      for (const [type, count] of entries) {
+        const slice = (count / total) * Math.PI * 2;
+        const x1 = cx + r * Math.cos(angle);
+        const y1 = cy + r * Math.sin(angle);
+        const x2 = cx + r * Math.cos(angle + slice);
+        const y2 = cy + r * Math.sin(angle + slice);
+        const large = slice > Math.PI ? 1 : 0;
+        html += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${colors[type] || '#888'}"/>`;
+        angle += slice;
+      }
+    }
+    svgEl.innerHTML = html;
+
+    // Build legend
+    legendEl.innerHTML = entries.map(([type, count]) => {
+      const pct = ((count / total) * 100).toFixed(0);
+      return `<div class="pie-leg-item"><span class="pie-leg-dot" style="background:${colors[type]}"></span><span>${labels[type] || type}</span><span class="pie-leg-pct">${pct}%</span></div>`;
+    }).join("");
+  }
+
+  function buildStatsHTML(items, totalVisible, singleTypeMode) {
+    const players = {};
+    const sides = { CT: 0, T: 0 };
+    for (const t of items) {
+      players[t.player] = (players[t.player] || 0) + 1;
+      if (t.side === "CT") sides.CT++;
+      else sides.T++;
+    }
+    const topPlayer = Object.entries(players).sort((a, b) => b[1] - a[1])[0];
+    const share = totalVisible > 0 ? Math.round((items.length / totalVisible) * 100) : 0;
+    const cx = items.reduce((sum, t) => sum + t.land_px, 0) / Math.max(items.length, 1);
+    const cy = items.reduce((sum, t) => sum + t.land_py, 0) / Math.max(items.length, 1);
+    const spread = Math.round(items.reduce((sum, t) => sum + Math.hypot(t.land_px - cx, t.land_py - cy), 0) / Math.max(items.length, 1));
+    const matchCount = new Set(items.map(t => t.match)).size;
+    let html = `<div class="stat-row"><span>Total</span><span class="stat-val">${items.length} grenades</span></div>`;
+    html += `<div class="stat-row"><span>CT / T</span><span class="stat-val">${sides.CT} / ${sides.T}</span></div>`;
+    html += `<div class="stat-row"><span>Share</span><span class="stat-val">${share}%</span></div>`;
+    if (topPlayer) html += `<div class="stat-row"><span>Top Thrower</span><span class="stat-val">${topPlayer[0]} (${topPlayer[1]})</span></div>`;
+    if (singleTypeMode) {
+      html += `<div class="stat-row"><span>Landing Spread</span><span class="stat-val">${spread}px</span></div>`;
+      html += `<div class="stat-row"><span>Matches</span><span class="stat-val">${matchCount}</span></div>`;
+    }
+    return html;
+  }
+
+  function showTooltip(cluster, mouseX, mouseY) {
+    const header = document.getElementById("ulTooltipHeader");
+    const label = { smoke: "Smoke", flash: "Flash", he: "HE", molotov: "Molotov" }[cluster.dominantType] || "Utility";
+    const singleTypeMode = filters.type !== "all";
+    header.textContent = `${label} Hotspot · ${cluster.count}`;
+    const pieRow = tooltip.querySelector(".vis-tooltip-pie-row");
+    const divider = tooltip.querySelector(".vis-tooltip-divider");
+    pieRow.style.display = singleTypeMode ? "none" : "flex";
+    divider.style.display = singleTypeMode ? "none" : "block";
+    if (!singleTypeMode) {
+      buildPieSVG(
+        document.getElementById("ulTooltipPie"),
+        document.getElementById("ulTooltipLegend"),
+        cluster.items
+      );
+    }
+    document.getElementById("ulTooltipStats").innerHTML = buildStatsHTML(cluster.items, getFilteredTrajectories().length, singleTypeMode);
+
+    const rect = mapContainer.getBoundingClientRect();
+    tooltip.style.display = "block";
+    const tipWidth = tooltip.offsetWidth;
+    const tipHeight = tooltip.offsetHeight;
+    let left = mouseX + 16;
+    if (left + tipWidth + 8 > rect.width) left = mouseX - tipWidth - 16;
+    left = Math.max(8, Math.min(left, rect.width - tipWidth - 8));
+    let top = mouseY - 18;
+    top = Math.max(8, Math.min(top, rect.height - tipHeight - 8));
+    tooltip.style.left = left + "px";
+    tooltip.style.top = top + "px";
+  }
+
+  function hideTooltip() {
+    tooltip.style.display = "none";
+    hoveredCluster = null;
+  }
+
+  function buildLocalCluster(mx, my, trajs) {
+    const nearby = trajs
+      .map(t => ({ t, d: Math.sqrt((mx - t.land_px) ** 2 + (my - t.land_py) ** 2) }))
+      .filter(x => x.d < 54)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 12)
+      .map(x => x.t);
+    if (nearby.length < 5) return null;
+    const cx = nearby.reduce((s, t) => s + t.land_px, 0) / nearby.length;
+    const cy = nearby.reduce((s, t) => s + t.land_py, 0) / nearby.length;
+    const typeCounts = {};
+    for (const t of nearby) typeCounts[t.type] = (typeCounts[t.type] || 0) + 1;
+    const dominantType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "smoke";
+    return { cx, cy, items: nearby, count: nearby.length, dominantType };
+  }
+
+  // Mouse interaction on the map container
+  ulMapArea.addEventListener("mousemove", (e) => {
+    const rect = mapContainer.getBoundingClientRect();
+    const scale = CANVAS_SIZE / rect.width;
+    const mx = (e.clientX - rect.left) * scale;
+    const my = (e.clientY - rect.top) * scale;
+
+    let closest = null;
+    let closestDist = Infinity;
+    for (const c of currentClusters) {
+      const d = Math.sqrt((mx - c.cx) ** 2 + (my - c.cy) ** 2);
+      if (d < HOTSPOT_RADIUS + 32 && d < closestDist) {
+        closest = c;
+        closestDist = d;
+      }
+    }
+
+    if (!closest) {
+      closest = buildLocalCluster(mx, my, getFilteredTrajectories());
+    }
+
+    if (closest) {
+      hoveredCluster = closest;
+      mapContainer.style.cursor = "pointer";
+      showTooltip(closest, e.clientX - ulMapArea.getBoundingClientRect().left, e.clientY - ulMapArea.getBoundingClientRect().top);
+    } else {
+      if (hoveredCluster) hideTooltip();
+      hoveredCluster = null;
+      mapContainer.style.cursor = "";
+    }
+  });
+
+  ulMapArea.addEventListener("mouseleave", () => {
+    hideTooltip();
+    mapContainer.style.cursor = "";
+  });
+
   // Sequential animation: grenades thrown one by one, each arc grows from throw→land
   function animateIn(trajs) {
     if (animRAF) cancelAnimationFrame(animRAF);
+    stopHotspotPulse();
+    currentClusters = computeClusters(trajs);
+    startHotspotPulse();
+    hideTooltip();
+
     if (trajs.length === 0) {
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.restore();
+      if (isDarkThemeActive()) {
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        ctx.restore();
+      }
       return;
     }
 
@@ -190,11 +581,16 @@
     if (isSectionVisible) {
       animateIn(trajs);
     } else {
+      stopHotspotPulse();
+      currentClusters = [];
+      hideTooltip();
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.restore();
+      if (isDarkThemeActive()) {
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        ctx.restore();
+      }
     }
   }
 
@@ -231,7 +627,7 @@
     document.querySelectorAll(".ul-map-tab").forEach(tab => {
       tab.classList.toggle("active", tab.dataset.map === mapName);
     });
-    document.getElementById("ulRadarImg").src = MAP_IMG_BASE + mapName + ".png";
+    setThemedRadarImage(radarImg, MAP_IMG_BASE + mapName + ".png");
     // Reset filters
     filters.side = "all";
     filters.match = "all";
@@ -284,11 +680,20 @@
           cancelAnimationFrame(animRAF);
           animRAF = null;
         }
+        stopHotspotPulse();
+        currentClusters = [];
+        hideTooltip();
       }
     });
 
+    new MutationObserver(() => {
+      setThemedRadarImage(radarImg, MAP_IMG_BASE + currentMap + ".png");
+      updateVisualization();
+    }).observe(document.body, { attributes: true, attributeFilter: ["data-theme"] });
+
     // Initial load
     updateMatchFilter();
+    setThemedRadarImage(radarImg, MAP_IMG_BASE + currentMap + ".png");
     updateVisualization();
   }
 
@@ -318,9 +723,18 @@
   let filters = { side: "all", player: "all", weapon_class: "all" };
   let animRAF = null;
   let isSectionVisible = false;
+  let animDone = false;
+  let lastFilteredKills = [];
+  let hoveredKill = null;
 
   const canvas = document.getElementById("kvCanvas");
   const ctx = canvas.getContext("2d");
+  const hoverCanvas = document.getElementById("kvHoverCanvas");
+  const hoverCtx = hoverCanvas.getContext("2d");
+  const kvMapContainer = document.getElementById("kvMapContainer");
+  const kvMapArea = kvMapContainer.closest(".kv-map-area");
+  const kvTooltip = document.getElementById("kvTooltip");
+  const kvRadarImg = document.getElementById("kvRadarImg");
 
   function getFiltered() {
     if (!allData || !allData.maps[currentMap]) return [];
@@ -373,10 +787,12 @@
     ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
     // Darken map for contrast
-    ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.50)";
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-    ctx.restore();
+    if (isDarkThemeActive()) {
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.50)";
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      ctx.restore();
+    }
 
     // Set composite operation for additive blending (makes lasers look like glowing light)
     ctx.globalCompositeOperation = "lighter";
@@ -489,15 +905,246 @@
     ctx.globalCompositeOperation = "source-over";
   }
 
+  // ── Kill hover detection ──
+  const KV_HOVER_DIST = 120; // forgiving hover radius so nearby movement always gets feedback
+  const KV_ZONE_RADIUS = 68;
+
+  // Point-to-line-segment distance
+  function ptSegDist(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+    let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const cx = ax + t * dx, cy = ay + t * dy;
+    return Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+  }
+
+  function findNearestKill(mx, my, kills) {
+    let best = null, bestDist = Infinity;
+    for (const k of kills) {
+      const lineDist = ptSegDist(mx, my, k.att_px, k.att_py, k.vic_px, k.vic_py);
+      const midX = (k.att_px + k.vic_px) / 2;
+      const midY = (k.att_py + k.vic_py) / 2;
+      const midDist = Math.sqrt((mx - midX) ** 2 + (my - midY) ** 2);
+      const d = Math.min(lineDist, midDist * 0.8);
+      if (d < KV_HOVER_DIST && d < bestDist) {
+        best = k;
+        bestDist = d;
+      }
+    }
+    return best;
+  }
+
+  function drawKillHighlight(k) {
+    hoverCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    const color = CLASS_COLORS[k.weapon_class] || "#78909c";
+    // Bright highlighted line
+    hoverCtx.save();
+    hoverCtx.globalAlpha = 1;
+    hoverCtx.strokeStyle = "#ffffff";
+    hoverCtx.lineWidth = 4;
+    hoverCtx.shadowColor = color;
+    hoverCtx.shadowBlur = 20;
+    hoverCtx.lineCap = "round";
+    hoverCtx.beginPath();
+    hoverCtx.moveTo(k.att_px, k.att_py);
+    hoverCtx.lineTo(k.vic_px, k.vic_py);
+    hoverCtx.stroke();
+    // Colored line on top
+    hoverCtx.strokeStyle = color;
+    hoverCtx.lineWidth = 2.5;
+    hoverCtx.shadowBlur = 0;
+    hoverCtx.beginPath();
+    hoverCtx.moveTo(k.att_px, k.att_py);
+    hoverCtx.lineTo(k.vic_px, k.vic_py);
+    hoverCtx.stroke();
+    // Attacker dot
+    hoverCtx.fillStyle = "#00e676";
+    hoverCtx.shadowColor = "#00e676";
+    hoverCtx.shadowBlur = 10;
+    hoverCtx.beginPath();
+    hoverCtx.arc(k.att_px, k.att_py, 5, 0, Math.PI * 2);
+    hoverCtx.fill();
+    // Victim X
+    hoverCtx.strokeStyle = "#ff1744";
+    hoverCtx.shadowColor = "#ff1744";
+    hoverCtx.shadowBlur = 12;
+    hoverCtx.lineWidth = 3;
+    const sz = 7;
+    hoverCtx.beginPath();
+    hoverCtx.moveTo(k.vic_px - sz, k.vic_py - sz);
+    hoverCtx.lineTo(k.vic_px + sz, k.vic_py + sz);
+    hoverCtx.moveTo(k.vic_px + sz, k.vic_py - sz);
+    hoverCtx.lineTo(k.vic_px - sz, k.vic_py + sz);
+    hoverCtx.stroke();
+    hoverCtx.restore();
+  }
+
+  function clearKillHighlight() {
+    hoverCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  }
+
+  // Build weapon pie for a zone around the hovered kill
+  function kvBuildPie(svgEl, legendEl, kills, cx, cy) {
+    const zone = kills.filter(k => {
+      const dx = ((k.att_px + k.vic_px) / 2) - cx;
+      const dy = ((k.att_py + k.vic_py) / 2) - cy;
+      return Math.sqrt(dx * dx + dy * dy) < KV_ZONE_RADIUS;
+    });
+    const counts = {};
+    for (const k of zone) counts[k.weapon_class] = (counts[k.weapon_class] || 0) + 1;
+    const total = zone.length;
+    if (total === 0) { svgEl.innerHTML = ""; legendEl.innerHTML = ""; return; }
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const labels = { pistol: "Pistol", smg: "SMG", rifle: "Rifle", sniper: "Sniper", shotgun: "Shotgun", knife: "Knife" };
+
+    let html = "";
+    const pcx = 40, pcy = 40, r = 36;
+    if (entries.length === 1) {
+      html = `<circle cx="${pcx}" cy="${pcy}" r="${r}" fill="${CLASS_COLORS[entries[0][0]] || "#888"}"/>`;
+    } else {
+      let angle = -Math.PI / 2;
+      for (const [cls, count] of entries) {
+        const slice = (count / total) * Math.PI * 2;
+        const x1 = pcx + r * Math.cos(angle);
+        const y1 = pcy + r * Math.sin(angle);
+        const x2 = pcx + r * Math.cos(angle + slice);
+        const y2 = pcy + r * Math.sin(angle + slice);
+        const large = slice > Math.PI ? 1 : 0;
+        html += `<path d="M${pcx},${pcy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${CLASS_COLORS[cls] || '#888'}"/>`;
+        angle += slice;
+      }
+    }
+    svgEl.innerHTML = html;
+
+    legendEl.innerHTML = entries.map(([cls, count]) => {
+      const pct = ((count / total) * 100).toFixed(0);
+      return `<div class="pie-leg-item"><span class="pie-leg-dot" style="background:${CLASS_COLORS[cls] || '#888'}"></span><span>${labels[cls] || cls}</span><span class="pie-leg-pct">${pct}%</span></div>`;
+    }).join("");
+  }
+
+  function kvBuildStats(k, kills, zoneKills, singleClassMode) {
+    const dist = Math.sqrt((k.att_px - k.vic_px) ** 2 + (k.att_py - k.vic_py) ** 2);
+    const distLabel = dist < 80 ? "Close" : dist < 200 ? "Medium" : "Long";
+    const hsRate = zoneKills.length ? Math.round(zoneKills.filter(x => x.headshot).length / zoneKills.length * 100) : 0;
+    const topVictim = Object.entries(zoneKills.reduce((acc, x) => {
+      acc[x.victim] = (acc[x.victim] || 0) + 1;
+      return acc;
+    }, {})).sort((a, b) => b[1] - a[1])[0];
+    let html = `<div class="stat-row"><span>Attacker</span><span class="stat-val">${k.player}</span></div>`;
+    html += `<div class="stat-row"><span>Victim</span><span class="stat-val">${k.victim}</span></div>`;
+    html += `<div class="stat-row"><span>Weapon</span><span class="stat-val">${k.weapon.replace(/_/g, " ")}</span></div>`;
+    html += `<div class="stat-row"><span>Range</span><span class="stat-val">${distLabel} (${Math.round(dist)}px)</span></div>`;
+    html += `<div class="stat-row"><span>Headshot</span><span class="stat-val">${k.headshot ? "✓ Yes" : "No"}</span></div>`;
+    html += `<div class="stat-row"><span>Side</span><span class="stat-val">${k.side}</span></div>`;
+    html += `<div class="stat-row"><span>Round</span><span class="stat-val">${k.round}</span></div>`;
+    if (singleClassMode) {
+      html += `<div class="stat-row"><span>Zone Kills</span><span class="stat-val">${zoneKills.length}</span></div>`;
+      html += `<div class="stat-row"><span>HS Rate</span><span class="stat-val">${hsRate}%</span></div>`;
+      if (topVictim) html += `<div class="stat-row"><span>Frequent Victim</span><span class="stat-val">${topVictim[0]} (${topVictim[1]})</span></div>`;
+    }
+    return html;
+  }
+
+  // Build recent kills list for the zone
+  function kvBuildKillsList(kills, cx, cy) {
+    const zone = kills.filter(k => {
+      const dx = ((k.att_px + k.vic_px) / 2) - cx;
+      const dy = ((k.att_py + k.vic_py) / 2) - cy;
+      return Math.sqrt(dx * dx + dy * dy) < KV_ZONE_RADIUS;
+    }).slice(0, 3);
+    if (zone.length <= 1) return "";
+    return `<div style="font-size:9px;color:var(--vis-text-muted);margin-bottom:3px;font-weight:700;">Nearby Kills (${zone.length})</div>` +
+      zone.map(k => {
+        const hs = k.headshot ? '<span class="kill-hs">HS</span>' : "";
+        return `<div class="kill-entry"><span class="kill-weapon">${k.weapon.replace(/_/g, " ")}</span><span>${k.player} → ${k.victim}</span>${hs}</div>`;
+      }).join("");
+  }
+
+  function kvShowTooltip(k, mouseX, mouseY) {
+    document.getElementById("kvTooltipHeader").textContent = `${k.player} → ${k.victim}`;
+    const midX = (k.att_px + k.vic_px) / 2;
+    const midY = (k.att_py + k.vic_py) / 2;
+    const zoneKills = lastFilteredKills.filter(x => {
+      const dx = ((x.att_px + x.vic_px) / 2) - midX;
+      const dy = ((x.att_py + x.vic_py) / 2) - midY;
+      return Math.sqrt(dx * dx + dy * dy) < KV_ZONE_RADIUS;
+    });
+    const singleClassMode = filters.weapon_class !== "all";
+    document.getElementById("kvTooltipStats").innerHTML = kvBuildStats(k, lastFilteredKills, zoneKills, singleClassMode);
+    const pieRow = kvTooltip.querySelector(".vis-tooltip-pie-row");
+    const dividerEls = kvTooltip.querySelectorAll(".vis-tooltip-divider");
+    pieRow.style.display = singleClassMode ? "none" : "flex";
+    if (dividerEls[0]) dividerEls[0].style.display = singleClassMode ? "none" : "block";
+    if (!singleClassMode) {
+      kvBuildPie(
+        document.getElementById("kvTooltipPie"),
+        document.getElementById("kvTooltipLegend"),
+        lastFilteredKills, midX, midY
+      );
+    }
+    document.getElementById("kvTooltipKills").innerHTML = kvBuildKillsList(lastFilteredKills, midX, midY);
+
+    const rect = kvMapContainer.getBoundingClientRect();
+    kvTooltip.style.display = "block";
+    const tipWidth = kvTooltip.offsetWidth;
+    const tipHeight = kvTooltip.offsetHeight;
+    let left = mouseX + 16;
+    if (left + tipWidth + 8 > rect.width) left = mouseX - tipWidth - 16;
+    left = Math.max(8, Math.min(left, rect.width - tipWidth - 8));
+    let top = mouseY - 18;
+    top = Math.max(8, Math.min(top, rect.height - tipHeight - 8));
+    kvTooltip.style.left = left + "px";
+    kvTooltip.style.top = top + "px";
+  }
+
+  function kvHideTooltip() {
+    kvTooltip.style.display = "none";
+    hoveredKill = null;
+    clearKillHighlight();
+  }
+
+  // Mouse events on kvMapContainer
+  kvMapArea.addEventListener("mousemove", (e) => {
+    if (lastFilteredKills.length === 0) return;
+    const rect = kvMapContainer.getBoundingClientRect();
+    const scale = CANVAS_SIZE / rect.width;
+    const mx = (e.clientX - rect.left) * scale;
+    const my = (e.clientY - rect.top) * scale;
+
+    const nearest = findNearestKill(mx, my, lastFilteredKills);
+    if (nearest) {
+      hoveredKill = nearest;
+      kvMapContainer.style.cursor = "crosshair";
+      drawKillHighlight(nearest);
+      const areaRect = kvMapArea.getBoundingClientRect();
+      kvShowTooltip(nearest, e.clientX - areaRect.left, e.clientY - areaRect.top);
+    } else {
+      if (hoveredKill) kvHideTooltip();
+      kvMapContainer.style.cursor = "";
+    }
+  });
+
+  kvMapArea.addEventListener("mouseleave", () => {
+    kvHideTooltip();
+    kvMapContainer.style.cursor = "";
+  });
+
   // Sequential animation
   function animateIn(kills) {
     if (animRAF) cancelAnimationFrame(animRAF);
+    animDone = false;
+    kvHideTooltip();
+
     if (kills.length === 0) {
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.50)";
-      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.restore();
+      if (isDarkThemeActive()) {
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.50)";
+        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        ctx.restore();
+      }
       return;
     }
 
@@ -530,7 +1177,8 @@
       if (elapsed < totalDuration) {
         animRAF = requestAnimationFrame(step);
       } else {
-        // Just let the last frame persist
+        // Animation finished — enable hover interactions
+        animDone = true;
       }
     }
     animRAF = requestAnimationFrame(step);
@@ -538,16 +1186,21 @@
 
   function updateVisualization() {
     const kills = getFiltered();
+    lastFilteredKills = kills;
     document.getElementById("kvStatBadge").textContent = `${kills.length} kills`;
     
     if (isSectionVisible) {
       animateIn(kills);
     } else {
+      animDone = false;
+      kvHideTooltip();
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.50)";
-      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-      ctx.restore();
+      if (isDarkThemeActive()) {
+        ctx.save();
+        ctx.fillStyle = "rgba(0,0,0,0.50)";
+        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        ctx.restore();
+      }
     }
   }
 
@@ -568,7 +1221,7 @@
     document.querySelectorAll(".kv-map-tab").forEach(tab => {
       tab.classList.toggle("active", tab.dataset.map === mapName);
     });
-    document.getElementById("kvRadarImg").src = MAP_IMG_BASE + mapName + ".png";
+    setThemedRadarImage(kvRadarImg, MAP_IMG_BASE + mapName + ".png");
     // Reset filters
     filters.side = "all";
     filters.player = "all";
@@ -618,9 +1271,17 @@
           cancelAnimationFrame(animRAF);
           animRAF = null;
         }
+        animDone = false;
+        kvHideTooltip();
       }
     });
 
+    new MutationObserver(() => {
+      setThemedRadarImage(kvRadarImg, MAP_IMG_BASE + currentMap + ".png");
+      updateVisualization();
+    }).observe(document.body, { attributes: true, attributeFilter: ["data-theme"] });
+
+    setThemedRadarImage(kvRadarImg, MAP_IMG_BASE + currentMap + ".png");
     updateVisualization();
   }
 
@@ -671,6 +1332,7 @@
   const controlCtx = controlCanvas.getContext("2d", { willReadFrequently: true });
   const playerCanvas = document.getElementById("mcPlayerCanvas");
   const playerCtx = playerCanvas.getContext("2d");
+  const mcRadarImg = document.getElementById("mcRadarImg");
 
   // Color LUT
   const COLOR_LUT = new Uint8ClampedArray(256 * 4);
@@ -991,7 +1653,7 @@
     document.querySelectorAll(".mc-map-tab").forEach(tab => {
       tab.classList.toggle("active", tab.dataset.map === mapName);
     });
-    document.getElementById("mcRadarImg").src = MAPS[mapName].img;
+    setThemedRadarImage(mcRadarImg, MAPS[mapName].img);
     const [data, mask] = await Promise.all([
       loadMapData(mapName),
       loadMapMask(mapName)
@@ -1043,6 +1705,10 @@
 
   // Init
   drawLegend();
+  new MutationObserver(() => {
+    setThemedRadarImage(mcRadarImg, MAPS[currentMap].img);
+    if (currentFrames) setFrame(frameIndex);
+  }).observe(document.body, { attributes: true, attributeFilter: ["data-theme"] });
   switchMap("de_mirage");
 })();
 

@@ -72,6 +72,11 @@
             <span>Loading world map...</span>
           </div>
         </div>
+        <div class="map-zoom-control" id="mapZoomControl">
+          <label for="mapZoomSlider">Zoom / Drag Pan</label>
+          <input id="mapZoomSlider" type="range" min="75" max="230" step="1" value="100" aria-label="Map zoom">
+          <span id="mapZoomValue">100%</span>
+        </div>
         <div class="country-tooltip" id="countryTooltip">
           <div class="tooltip-title" id="tooltipTitle">Unknown</div>
           <div class="tooltip-sub" id="tooltipSub">No data yet</div>
@@ -299,6 +304,14 @@
     </div>
   </div>
 
+  <!-- Player dashboard modal -->
+  <div class="player-dashboard-modal" id="playerDashboardModal" aria-hidden="true">
+    <div class="player-dashboard-backdrop" id="playerDashboardBackdrop"></div>
+    <section class="player-dashboard-card" role="dialog" aria-modal="true" aria-labelledby="playerDashTitle">
+      <button class="player-dashboard-close" id="playerDashboardClose" aria-label="Close player dashboard">&times;</button>
+      <div class="player-dashboard-content" id="playerDashboardContent"></div>
+    </section>
+  </div>
   <footer class="dashboard-footer">
     <p>CSC316 — Five Color Squad</p>
   </footer>
@@ -307,3 +320,4 @@
   <script src="js/dashboard.js"></script>
 </body>
 </html>
+

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>选手经济分析 — Five Color Squad</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Counter-Strike 2 选手经济分析</h1>
+    <p class="subtitle">支持接入真实赛事数据的经济分析面板（框架版）</p>
+    <a href="index.html" class="back-link">← 返回 Dashboard</a>
+  </header>
+
+  <main>
+    <section id="player-economy-overview" class="analysis-content">
+      <div class="analysis-header">
+        <h2>选手经济总览</h2>
+        <p>通过时间轴和多维指标，观察单个选手在整场比赛中的经济节奏与投入产出。</p>
+      </div>
+
+      <div class="vis-container">
+        <div class="eco-wrapper">
+          <aside class="eco-sidebar">
+            <div class="eco-player-card">
+              <div class="eco-player-avatar">
+                <img id="ecoPlayerAvatarImg" class="eco-player-avatar-img" alt="Player avatar" loading="lazy">
+                <div id="ecoPlayerAvatarFallback" class="eco-player-avatar-fallback" aria-hidden="true"></div>
+              </div>
+              <div class="eco-player-meta">
+                <h3 id="ecoPlayerName">选择一名选手</h3>
+                <p id="ecoPlayerTeam" class="eco-player-team">队伍 / 地区</p>
+                <div class="eco-player-rating">
+                  <span class="eco-rating-label">Eco Rating</span>
+                  <span class="eco-rating-value" id="ecoPlayerRating">—</span>
+                </div>
+                <ul class="eco-player-hltv">
+                  <li>
+                    <span class="eco-hltv-label">K-D</span>
+                    <span class="eco-hltv-value" id="ecoPlayerKD">—</span>
+                  </li>
+                  <li>
+                    <span class="eco-hltv-label">ADR</span>
+                    <span class="eco-hltv-value" id="ecoPlayerADR">—</span>
+                  </li>
+                  <li>
+                    <span class="eco-hltv-label">Rating 3.0</span>
+                    <span class="eco-hltv-value" id="ecoPlayerRatingHLTV">—</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="eco-filter-group">
+              <label for="ecoPlayerSelect">选手</label>
+              <select id="ecoPlayerSelect" class="eco-select"></select>
+            </div>
+
+            <div class="eco-filter-group">
+              <label for="ecoMatchSelect">对局</label>
+              <select id="ecoMatchSelect" class="eco-select"></select>
+            </div>
+
+            <div class="eco-filter-group">
+              <label for="ecoMapSelect">地图</label>
+              <select id="ecoMapSelect" class="eco-select"></select>
+            </div>
+
+            <div class="eco-filter-group">
+              <label>回合区间</label>
+              <div class="eco-range-row">
+                <input id="ecoRoundStart" class="eco-input-number" type="number" min="1" value="1">
+                <span class="eco-range-sep">–</span>
+                <input id="ecoRoundEnd" class="eco-input-number" type="number" min="1" value="30">
+              </div>
+            </div>
+
+            <button id="ecoApplyFilters" class="eco-apply-btn">应用筛选</button>
+          </aside>
+
+          <section class="eco-main">
+            <div class="eco-panel eco-panel-primary">
+              <div class="eco-panel-header">
+                <h3>回合经济走势</h3>
+                <p>展示每回合开始金钱、花费与回合结束净资产，支持接入真实赛事逐回合经济数据。</p>
+              </div>
+              <div id="ecoLineChart" class="eco-chart-placeholder">
+                正在等待选手与对局数据…
+              </div>
+            </div>
+
+            <div class="eco-panel eco-panel-secondary">
+              <div class="eco-panel-header">
+                <h3>经济雷达图</h3>
+                <p>通过稳定度、投入产出比、节奏控制等维度，概览选手整体经济表现。</p>
+              </div>
+              <div id="ecoRadarChart" class="eco-chart-placeholder">
+                经济雷达图将显示在这里。
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <section id="player-economy-weapons" class="analysis-content">
+      <div class="analysis-header">
+        <h2>武器与装备投资分析</h2>
+        <p>统计不同武器/装备的投入金额与击杀产出，用于识别高性价比和高风险投资。</p>
+      </div>
+
+      <div class="vis-container">
+        <div class="eco-weapons-wrapper">
+          <div class="eco-weapons-board" id="ecoWeaponsBoard">
+            <p class="eco-weapons-placeholder">
+              武器投资面板会根据选手与对局动态填充。此处预留真实数据接口，方便后续直接对接数据库或 API。
+            </p>
+          </div>
+          <aside class="eco-weapons-side">
+            <div class="eco-panel eco-panel-compact">
+              <div class="eco-panel-header">
+                <h3>关键经济回合</h3>
+                <p>高投入 / 高回报的代表性回合概览。</p>
+              </div>
+              <ul id="ecoKeyRoundsList" class="eco-key-rounds-list"></ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>CSC316 — Five Color Squad</p>
+  </footer>
+
+  <script src="js/player-economy.js"></script>
+</body>
+</html>
+

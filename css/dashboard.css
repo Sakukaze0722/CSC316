@@ -54,16 +54,16 @@ body.dashboard-body[data-theme="light"] {
   --dbg-title-gradient: linear-gradient(135deg, #1e293b 0%, #475569 100%);
   --dbg-toggle-bg: rgba(241, 245, 249, 0.9);
   --dbg-toggle-border: rgba(203, 213, 225, 0.9);
-  --dbg-btn-color: #64748b;
-  --dbg-btn-hover: #1e293b;
+  --dbg-btn-color: #475569;
+  --dbg-btn-hover: #0f172a;
   --dbg-main-bg: transparent;
   --dbg-game-bg: rgba(255, 255, 255, 0.8);
   --dbg-game-border: rgba(203, 213, 225, 0.8);
-  --dbg-hint: #64748b;
+  --dbg-hint: #475569;
   --dbg-map-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%);
   --dbg-map-border: rgba(203, 213, 225, 0.8);
   --dbg-loading-bg: rgba(255, 255, 255, 0.9);
-  --dbg-loading-color: #64748b;
+  --dbg-loading-color: #475569;
   --dbg-tooltip-bg: linear-gradient(135deg, rgba(51, 65, 85, 0.96) 0%, rgba(30, 41, 59, 0.98) 100%);
   --dbg-tooltip-border: rgba(59, 130, 246, 0.4);
   --dbg-tooltip-color: #f8fafc;
@@ -72,11 +72,11 @@ body.dashboard-body[data-theme="light"] {
   --dbg-panel-border: rgba(203, 213, 225, 0.8);
   --dbg-panel-title: linear-gradient(135deg, #1e293b 0%, #475569 100%);
   --dbg-panel-text: #475569;
-  --dbg-panel-placeholder: #94a3b8;
+  --dbg-panel-placeholder: #64748b;
   --dbg-close-bg: rgba(203, 213, 225, 0.9);
-  --dbg-close-color: #64748b;
+  --dbg-close-color: #475569;
   --dbg-footer-bg: rgba(255, 255, 255, 0.9);
-  --dbg-footer-color: #64748b;
+  --dbg-footer-color: #475569;
   --dbg-footer-border: rgba(203, 213, 225, 0.8);
 }
 
@@ -574,6 +574,45 @@ body.dashboard-body[data-theme="dark"] .detail-panel {
   background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
   transform-origin: left center;
   transition: background 0.35s ease, transform 0.25s ease;
+}
+
+/* ---------- Main navigation (anchor + smooth scroll) ---------- */
+.main-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--dbg-header-bg);
+  border-top: 1px solid var(--dbg-header-border);
+  backdrop-filter: blur(12px);
+  transition: background 0.4s, border-color 0.4s;
+}
+
+.main-nav-link {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dbg-btn-color);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.main-nav-link:hover {
+  color: var(--dbg-btn-hover);
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.main-nav-link.active {
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.main-nav-link.active:hover {
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  opacity: 0.95;
 }
 
 .dynamic-status-bar.dota {

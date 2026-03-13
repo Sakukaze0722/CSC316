@@ -1,8 +1,72 @@
 /**
  * Dashboard — Full Fancy Interaction Pack
+ * Language follows system: navigator.language (zh* → zh-CN, else en)
  */
 
 (function () {
+  const sysLang = typeof navigator !== "undefined" && navigator.language ? navigator.language.toLowerCase() : "";
+  const locale = sysLang.startsWith("zh") ? "zh" : "en";
+  const htmlLang = locale === "zh" ? "zh-CN" : "en";
+  document.documentElement.lang = htmlLang;
+  document.documentElement.dataset.locale = locale;
+
+  const STRINGS = {
+    en: {
+      nav_worldmap: "World Map",
+      nav_mapcontrol: "Map Control",
+      nav_heatmaps: "Heatmaps",
+      nav_more: "More",
+      nav_conclusion: "Conclusion",
+      cs_detail_link: "View full CS2 analysis (detailed page) →",
+      map_loading: "Loading world map...",
+      detail_placeholder: "Select a country to view regional performance and trends",
+      vis3_coming: "Coming Soon",
+      vis3_desc: "This section is reserved for a third visualization. Check back later for updates.",
+      conclusion_placeholder: "This space is for your final takeaways: summarize regional esports patterns, map control insights, and heatmap findings from the Vitality vs The MongolZ analysis.",
+      conclusion_hint: "Replace this placeholder with your written conclusion before submission.",
+      drawer_handle: "Top Countries",
+      drawer_title_cs: "Counter-Strike Top Countries",
+      drawer_title_dota: "DOTA 2 Top Countries",
+      story_mode: "Story Mode",
+    },
+    zh: {
+      nav_worldmap: "世界地图",
+      nav_mapcontrol: "地图控制",
+      nav_heatmaps: "热力图",
+      nav_more: "更多",
+      nav_conclusion: "结论",
+      cs_detail_link: "查看完整 CS2 分析（详情页） →",
+      map_loading: "加载世界地图中…",
+      detail_placeholder: "点击国家查看该地区表现与趋势",
+      vis3_coming: "即将推出",
+      vis3_desc: "此处将放置第三个可视化内容，敬请期待。",
+      conclusion_placeholder: "在此撰写总结：区域电竞格局、地图控制与热力图分析要点。",
+      conclusion_hint: "提交前请用你的结论替换此占位内容。",
+      drawer_handle: "国家排名",
+      drawer_title_cs: "Counter-Strike 国家排名",
+      drawer_title_dota: "DOTA 2 国家排名",
+      story_mode: "故事模式",
+    },
+  };
+
+  function getI18n(key) {
+    return (STRINGS[locale] && STRINGS[locale][key]) || STRINGS.en[key] || key;
+  }
+
+  function applyI18n() {
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      const key = el.getAttribute("data-i18n");
+      const text = getI18n(key);
+      if (el.getAttribute("data-i18n-attr")) {
+        el.setAttribute(el.getAttribute("data-i18n-attr"), text);
+      } else {
+        el.textContent = text;
+      }
+    });
+  }
+
+  window.getI18n = getI18n;
+
   const WORLD_ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
   const THEME_STORAGE_KEY = "dashboard-theme";
   const SOUND_STORAGE_KEY = "dashboard-sound";
@@ -223,7 +287,7 @@
 
   function renderDrawer() {
     const topList = TOP_COUNTRIES[currentGame];
-    drawerTitle.textContent = currentGame === "cs" ? "Counter-Strike Top Countries" : "DOTA 2 Top Countries";
+    drawerTitle.textContent = currentGame === "cs" ? getI18n("drawer_title_cs") : getI18n("drawer_title_dota");
     drawerList.innerHTML = topList
       .map((name, idx) => {
         const m = computeMockMetrics(name, currentGame);
@@ -555,6 +619,7 @@
   }
 
   function onCountryClick(event, feature) {
+    event.stopPropagation();
     const name = getCountryName(feature);
     selectedCountry = feature;
     selectedCountryName = name;
@@ -582,16 +647,28 @@
     playClickTone("accent");
   }
 
+  function closeDetailPanel() {
+    detailPanel.classList.add("collapsed");
+    selectedCountry = null;
+    selectedCountryName = null;
+    selectedTeamId = null;
+    mapFocusOverlay.classList.remove("active");
+    hideTeamHoverMenu();
+    updateMapForGame();
+    playClickTone("soft");
+  }
+
   function initDetailPanel() {
-    detailClose.addEventListener("click", () => {
-      detailPanel.classList.add("collapsed");
-      selectedCountry = null;
-      selectedCountryName = null;
-      selectedTeamId = null;
-      mapFocusOverlay.classList.remove("active");
-      hideTeamHoverMenu();
-      updateMapForGame();
-      playClickTone("soft");
+    detailClose.addEventListener("click", closeDetailPanel);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !detailPanel.classList.contains("collapsed")) {
+        closeDetailPanel();
+      }
+    });
+    mapWrapperEl.addEventListener("click", () => {
+      if (!detailPanel.classList.contains("collapsed")) {
+        closeDetailPanel();
+      }
     });
   }
 
@@ -656,8 +733,31 @@
     });
   }
 
+  function initNavHighlight() {
+    const nav = document.getElementById("mainNav");
+    if (!nav) return;
+    const links = nav.querySelectorAll(".main-nav-link");
+    const sectionIds = Array.from(links).map((a) => a.getAttribute("href")?.slice(1)).filter(Boolean);
+    const sections = sectionIds.map((id) => document.getElementById(id)).filter(Boolean);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const id = entry.target.id;
+          links.forEach((link) => {
+            const href = link.getAttribute("href");
+            link.classList.toggle("active", href === "#" + id);
+          });
+        });
+      },
+      { rootMargin: "-20% 0px -60% 0px", threshold: 0 }
+    );
+    sections.forEach((el) => el && observer.observe(el));
+  }
 
   async function init() {
+    applyI18n();
     initThemeToggle();
     initSoundToggle();
     initGameToggle();
@@ -671,6 +771,7 @@
     updateStatusBar();
     renderStoryModeVisibility();
     renderAchievements();
+    initNavHighlight();
 
     try {
       await initWorldMap();

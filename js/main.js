@@ -1,20 +1,10 @@
 // Main entry point for D3 visualizations
 
 // ============================================================
-//  Visualization 2 — Placeholder
+//  Visualization 3 — Placeholder (content is in HTML)
 // ============================================================
 function initVis2() {
-  const container = d3.select('#vis3');
-  container.html('');
-  const svg = container
-    .append('svg')
-    .attr('width', 900)
-    .attr('height', 400);
-  svg.append('text')
-    .attr('x', 450).attr('y', 200)
-    .attr('text-anchor', 'middle')
-    .attr('fill', '#aaa').attr('font-size', '1.2rem')
-    .text('Visualization 3 — Coming Soon');
+  // Vis3 uses inline HTML placeholder; no DOM injection here.
 }
 
 // ============================================================

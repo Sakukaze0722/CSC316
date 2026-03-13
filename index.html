@@ -6,6 +6,7 @@
   <title>CSC316 — Five Color Squad</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/dashboard.css">
+  <style>html { scroll-behavior: smooth; }</style>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
@@ -26,6 +27,13 @@
       </div>
     </div>
     <div class="dynamic-status-bar" id="dynamicStatusBar"></div>
+    <nav class="main-nav" id="mainNav" aria-label="Page sections">
+      <a href="#vis1Section" class="main-nav-link" data-i18n="nav_worldmap">World Map</a>
+      <a href="#mapControlSection" class="main-nav-link" data-i18n="nav_mapcontrol">Map Control</a>
+      <a href="#heatmap-section" class="main-nav-link" data-i18n="nav_heatmaps">Heatmaps</a>
+      <a href="#vis3Section" class="main-nav-link" data-i18n="nav_more">More</a>
+      <a href="#conclusionSection" class="main-nav-link" data-i18n="nav_conclusion">Conclusion</a>
+    </nav>
   </header>
 
   <!-- ============================================================
@@ -69,7 +77,7 @@
           <div id="mapFocusOverlay" class="map-focus-overlay" aria-hidden="true"></div>
           <div class="map-loading">
             <div class="map-spinner"></div>
-            <span>Loading world map...</span>
+            <span data-i18n="map_loading">Loading world map...</span>
           </div>
         </div>
         <div class="country-tooltip" id="countryTooltip">
@@ -95,7 +103,7 @@
                 <circle cx="68" cy="60" r="3"></circle>
                 <circle cx="90" cy="38" r="3"></circle>
               </svg>
-              <p class="detail-placeholder">Select a country to view regional performance and trends</p>
+              <p class="detail-placeholder" data-i18n="detail_placeholder">Select a country to view regional performance and trends</p>
             </div>
           </div>
         </div>
@@ -103,7 +111,7 @@
     </main>
 
     <section class="story-section" id="storySection">
-      <h2>Story Mode</h2>
+      <h2 data-i18n="story_mode">Story Mode</h2>
       <div class="story-cards" id="storyCards">
         <article class="story-card active" data-game="cs">
           <h3>Tactical Pace Differences</h3>
@@ -132,6 +140,7 @@
     <div class="analysis-header">
       <h2>CS2 Map Control &amp; Heatmaps</h2>
       <p>Vitality vs The MongolZ — BLAST.tv Austin Major 2025 Grand Final</p>
+      <a href="cs-detail.html" class="cs-detail-link" data-i18n="cs_detail_link">View full CS2 analysis (detailed page) →</a>
     </div>
 
     <section id="mapControlSection">
@@ -258,9 +267,11 @@
       </div>
       <div class="hm-grid hm-grid-2" id="hmGrid">
         <div class="hm-card">
+          <p class="hm-caption">Vitality CT vs The MongolZ T</p>
           <img id="hmCombo1" src="output/heatmaps_combined/de_mirage_vitality_ct_mongolz_t.png" alt="Vitality CT vs MongolZ T">
         </div>
         <div class="hm-card">
+          <p class="hm-caption">Vitality T vs The MongolZ CT</p>
           <img id="hmCombo2" src="output/heatmaps_combined/de_mirage_vitality_t_mongolz_ct.png" alt="Vitality T vs MongolZ CT">
         </div>
       </div>
@@ -272,11 +283,18 @@
        ============================================================ -->
   <div class="analysis-content" id="vis3Section">
     <div class="analysis-header">
-      <h2>Visualization 3</h2>
-      <p>[Description placeholder]</p>
+      <h2>Player Economy Analysis</h2>
+      <p>深入分析单个选手的经济节奏、投入产出与关键投资回合。</p>
+      <a href="player-economy.html" class="cs-detail-link">查看选手经济分析详情页 →</a>
     </div>
     <section>
-      <div id="vis3" class="vis-container"></div>
+      <div id="vis3" class="vis-container vis-placeholder">
+        <div class="placeholder-card">
+          <span class="placeholder-icon" aria-hidden="true">📊</span>
+          <h3>框架已就绪</h3>
+          <p>选手经济分析已经作为单独页面实现，你可以从这里跳转到详情页，并在后续直接接入真实数据源。</p>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -286,13 +304,16 @@
   <div class="analysis-content" id="conclusionSection">
     <section id="conclusion">
       <h2>Conclusion</h2>
-      <p>[Your conclusion and takeaways go here.]</p>
+      <div class="conclusion-placeholder">
+        <p data-i18n="conclusion_placeholder">This space is for your final takeaways: summarize regional esports patterns, map control insights, and heatmap findings from the Vitality vs The MongolZ analysis.</p>
+        <p class="conclusion-hint" data-i18n="conclusion_hint">Replace this placeholder with your written conclusion before submission.</p>
+      </div>
     </section>
   </div>
 
   <!-- Ranking drawer: fixed right-side overlay -->
   <div class="rank-drawer" id="rankDrawer">
-    <button class="drawer-handle" id="drawerHandle" aria-label="Expand ranking drawer">Top Countries</button>
+    <button class="drawer-handle" id="drawerHandle" aria-label="Expand ranking drawer" data-i18n="drawer_handle">Top Countries</button>
     <div class="drawer-content">
       <h3 id="drawerTitle">Counter-Strike Top Countries</h3>
       <ol id="drawerList" class="drawer-list"></ol>

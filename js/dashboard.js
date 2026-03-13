@@ -5,7 +5,7 @@
 
 (function () {
   const WORLD_ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-  const PLAYER_STATS_URL = "data/player_stats.csv";
+  const PLAYER_STATS_URL = "data/player_data_csgo/hltv_playerStats-complete.csv";
   const HLTV_ENRICH_URL = "https://hltv-api.vercel.app/api/player.json";
   const HLTV_OVERRIDES_URL = "data/hltv_player_overrides.json";
   const THEME_STORAGE_KEY = "dashboard-theme";
@@ -83,6 +83,7 @@
   let detailPlayerSort = "rating";
   let detailPlayerQuery = "";
   let detailPlayerPage = 1;
+  let detailTeamFilter = null;
   let mapScale = 1;
   let mapPanX = 0;
   let mapPanY = 0;
@@ -95,6 +96,7 @@
   let countryRank = [];
   let metricExtents = {};
   let globalMetricAverages = { ...EMPTY_METRIC_PROFILE };
+  let clubCountries = new Map();
 
   const mapContainer = document.getElementById("worldMap");
   const mapFocusOverlay = document.getElementById("mapFocusOverlay");
@@ -308,12 +310,14 @@
    * fields so UI rendering stays deterministic even before HLTV data arrives.
    */
   function toPlayer(row, index) {
-    const name = String(row.name || "").trim();
+    // hltv_playerStats-complete.csv uses "nick" for in-game name
+    const name = String(row.nick || row.name || "").trim();
     const countryRaw = String(row.country || "").trim();
     if (!name || !countryRaw) return null;
     const teams = parseTeams(row.teams);
     const country = canonicalDataCountry(countryRaw);
-    const totalMaps = num(row.total_maps);
+    // Map HLTV column names to internal fields
+    const totalMaps = num(row.maps_played);
     const fallbackAvatar = avatarUri(name);
     return {
       id: `p-${index}-${hashCode(`${name}-${country}-${totalMaps}`)}`,
@@ -322,9 +326,9 @@
       teams,
       teamCount: teams.length,
       total_maps: totalMaps,
-      total_rounds: num(row.total_rounds),
-      kd_diff: num(row.kd_diff),
-      kd: num(row.kd),
+      total_rounds: num(row.rounds_played),
+      kd_diff: num(row.kd_difference),
+      kd: num(row.kd_ratio),
       rating: num(row.rating),
       avatar: fallbackAvatar,
       avatarFallback: fallbackAvatar,
@@ -338,7 +342,9 @@
       hltvTeamsHistory: [],
       hltvNews: [],
       hltvSocials: null,
-      hltvUrl: `https://www.hltv.org/search?query=${encodeURIComponent(name)}`,
+      hltvUrl: row.stats_link
+        ? String(row.stats_link).trim()
+        : `https://www.hltv.org/search?query=${encodeURIComponent(name)}`,
     };
   }
 
@@ -351,6 +357,7 @@
     playerById = new Map();
     countryData = new Map();
     countryLookup = new Map();
+     clubCountries = new Map();
 
     records.forEach((p) => playerById.set(p.id, p));
     const grouped = d3.group(records, (p) => p.country);
@@ -358,7 +365,18 @@
     grouped.forEach((list, country) => {
       const sorted = list.slice().sort((a, b) => d3.descending(a.rating, b.rating) || d3.descending(a.kd, b.kd));
       const teamSet = new Set();
-      sorted.forEach((p) => p.teams.forEach((t) => teamSet.add(t)));
+      sorted.forEach((p) => {
+        p.teams.forEach((t) => {
+          const name = t || "Unaffiliated";
+          teamSet.add(name);
+          let set = clubCountries.get(name);
+          if (!set) {
+            set = new Set();
+            clubCountries.set(name, set);
+          }
+          set.add(country);
+        });
+      });
       const profile = {
         country,
         players: sorted,
@@ -802,7 +820,17 @@
 
     const query = detailPlayerQuery.trim().toLowerCase();
     const sorted = sortPlayers(selectedCountryProfile.players, detailPlayerSort);
-    const filtered = sorted.filter((p) => !query || p.name.toLowerCase().includes(query) || p.teams.some((t) => t.toLowerCase().includes(query)));
+    const filtered = sorted.filter((p) => {
+      const matchesQuery =
+        !query ||
+        p.name.toLowerCase().includes(query) ||
+        p.teams.some((t) => t.toLowerCase().includes(query));
+      const primaryTeam = p.teams && p.teams.length ? p.teams[0] : "Unaffiliated";
+      const matchesTeam =
+        !detailTeamFilter ||
+        primaryTeam.toLowerCase() === detailTeamFilter.toLowerCase();
+      return matchesQuery && matchesTeam;
+    });
 
     if (!filtered.length) {
       listEl.innerHTML = `<p class="player-list-empty">No players match this filter.</p>`;
@@ -899,7 +927,7 @@
         ${flag ? `<img class="country-flag flag-image" src="${flag}" alt="${esc(profile.country)} flag">` : ""}
         <div class="country-headline-text">
           <div class="country-headline-name">${esc(flagEmoji(profile.country))} ${esc(profile.country)}</div>
-          <div class="country-headline-sub">${profile.playerCount} players in player_stats</div>
+          <div class="country-headline-sub">${profile.playerCount} players from ${esc(profile.country)}</div>
         </div>
       </div>
 
@@ -929,6 +957,95 @@
     `;
 
     bindFlagFallback(detailContent);
+
+    // Inject a small club summary for this country and link it to the map.
+    (function renderCountryTeams() {
+      if (!selectedCountryProfile) return;
+      const teamsRollup = d3.rollup(
+        selectedCountryProfile.players,
+        (list) => ({
+          playerCount: list.length,
+          avgRating: d3.mean(list, (p) => p.rating) || 0,
+        }),
+        (p) => (p.teams && p.teams.length ? p.teams[0] : "Unaffiliated")
+      );
+      const top = Array.from(teamsRollup, ([name, stats]) => ({
+        name,
+        playerCount: stats.playerCount,
+        avgRating: stats.avgRating,
+      }))
+        .sort(
+          (a, b) =>
+            d3.descending(a.playerCount, b.playerCount) ||
+            d3.descending(a.avgRating, b.avgRating)
+        )
+        .slice(0, 6);
+      if (!top.length) return;
+
+      const section = document.createElement("div");
+      section.className = "country-team-section";
+      section.innerHTML = `
+        <div class="team-section-title">Club presence among ${esc(profile.country)} players</div>
+        <div class="team-list">
+          ${top
+            .map(
+              (t) => `
+                <button class="team-list-item" type="button" data-team="${esc(t.name)}">
+                  ${esc(t.name)} &middot; ${t.playerCount} player${
+                t.playerCount > 1 ? "s" : ""
+              } &mdash; R ${t.avgRating.toFixed(2)}
+                </button>
+              `
+            )
+            .join("")}
+        </div>
+      `;
+
+      const kpiGrid = detailContent.querySelector(".kpi-grid");
+      if (kpiGrid && kpiGrid.parentNode) {
+        kpiGrid.parentNode.insertBefore(section, kpiGrid.nextSibling);
+      } else {
+        detailContent.appendChild(section);
+      }
+
+      section.querySelectorAll(".team-list-item").forEach((btn) => {
+        const teamName = btn.dataset.team;
+        btn.addEventListener("mouseenter", () => {
+          if (teamName) highlightClubOnMap(teamName);
+        });
+        btn.addEventListener("mouseleave", () => {
+          if (!detailTeamFilter) {
+            updateMapColors();
+          } else if (teamName !== detailTeamFilter) {
+            // keep current highlight if another team is selected
+            highlightClubOnMap(detailTeamFilter);
+          }
+        });
+        btn.addEventListener("click", () => {
+          const next =
+            detailTeamFilter &&
+            detailTeamFilter.toLowerCase() === teamName.toLowerCase()
+              ? null
+              : teamName;
+          detailTeamFilter = next;
+          section.querySelectorAll(".team-list-item").forEach((b) => {
+            const tn = b.dataset.team || "";
+            b.classList.toggle(
+              "active",
+              detailTeamFilter &&
+                tn.toLowerCase() === detailTeamFilter.toLowerCase()
+            );
+          });
+          detailPlayerPage = 1;
+          renderCountryPlayerList();
+          if (detailTeamFilter) {
+            highlightClubOnMap(detailTeamFilter);
+          } else {
+            updateMapColors();
+          }
+        });
+      });
+    })();
 
     detailContent.querySelector("#countryPlayerSearch")?.addEventListener("input", (e) => {
       detailPlayerQuery = e.target.value || "";
@@ -962,6 +1079,41 @@
       .style("filter", (f) => (f === selectedCountry ? `drop-shadow(0 0 10px ${colors.glow})` : "none"));
     applySelectionPulse();
     svg.selectAll("text.country-label").classed("selected", (f) => f === selectedCountry);
+  }
+
+  function highlightClubOnMap(teamName) {
+    if (!svg) return;
+    const countries = clubCountries.get(teamName);
+    if (!countries || !countries.size) {
+      updateMapColors();
+      return;
+    }
+    const colors = getGameColors();
+    svg
+      .selectAll("path.country")
+      .transition()
+      .duration(220)
+      .ease(d3.easeCubicOut)
+      .attr("fill", (f) => {
+        const name = mapCountryName(f);
+        return countries.has(name) ? colors.active : countryFill(f);
+      })
+      .attr("stroke", (f) => {
+        const name = mapCountryName(f);
+        return countries.has(name) ? colors.active : colors.stroke;
+      })
+      .attr("stroke-width", (f) => {
+        const name = mapCountryName(f);
+        return countries.has(name) ? 1.6 : 0.5;
+      })
+      .style("opacity", (f) => {
+        const name = mapCountryName(f);
+        return countries.has(name) ? 1 : 0.3;
+      })
+      .style("filter", (f) => {
+        const name = mapCountryName(f);
+        return countries.has(name) ? `drop-shadow(0 0 10px ${colors.glow})` : "none";
+      });
   }
 
   function onCountryHover(event, feature) {
@@ -1329,8 +1481,6 @@
         <div class="player-kpi-card"><span class="player-kpi-label">Maps</span><span class="player-kpi-value">${d3.format(",.0f")(player.total_maps)}</span></div>
         <div class="player-kpi-card"><span class="player-kpi-label">Rounds</span><span class="player-kpi-value">${d3.format(",.0f")(player.total_rounds)}</span></div>
       </div>
-
-      ${renderHLTVSnapshot(player)}
 
       <div class="player-viz-grid">
         <section class="player-viz-card">

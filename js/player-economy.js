@@ -42,7 +42,7 @@
             name: "apEX",
             fullName: "Dan 'apEX' Madesclaire",
             role: "IGL",
-            avatarUrl: "img/players/apEX.jpg",
+            avatarUrl: "images/apEX.jpg",
             stats: {
               kd: "43-33",
               adr: 94.1,
@@ -54,7 +54,7 @@
             name: "flameZ",
             fullName: "Shahar 'flameZ' Shushan",
             role: "Entry",
-            avatarUrl: "img/players/flameZ.jpg",
+            avatarUrl: "images/flameZ.jpg",
             stats: {
               kd: "44-33",
               adr: 75.5,
@@ -66,7 +66,7 @@
             name: "mezii",
             fullName: "William 'mezii' Merriman",
             role: "Rifler",
-            avatarUrl: "img/players/mezii.jpg",
+            avatarUrl: "images/mezii.jpg",
             stats: {
               kd: "47-33",
               adr: 88.3,
@@ -78,7 +78,7 @@
             name: "ZywOo",
             fullName: "Mathieu 'ZywOo' Herbaut",
             role: "AWPer",
-            avatarUrl: "img/players/ZywOo.jpg",
+            avatarUrl: "images/ZywOo.jpg",
             stats: {
               kd: "37-34",
               adr: 78.3,
@@ -90,7 +90,7 @@
             name: "ropz",
             fullName: "Robin 'ropz' Kool",
             role: "Rifler",
-            avatarUrl: "img/players/ropz.jpg",
+            avatarUrl: "images/ropz.jpg",
             stats: {
               kd: "41-38",
               adr: 81.0,
@@ -109,7 +109,7 @@
             name: "Senzu",
             fullName: "Azbayar 'Senzu' Munkhbold",
             role: "Rifler",
-            avatarUrl: "img/players/Senzu.jpg",
+            avatarUrl: "images/Senzu.jpg",
             stats: {
               kd: "45-41",
               adr: 95.3,
@@ -121,7 +121,7 @@
             name: "Techno",
             fullName: "Sodbayar 'Techno' Munkhbold",
             role: "Rifler",
-            avatarUrl: "img/players/Techno.jpg",
+            avatarUrl: "images/Techno.jpg",
             stats: {
               kd: "31-37",
               adr: 61.3,
@@ -133,7 +133,7 @@
             name: "bLitz",
             fullName: "Garidmagnai 'bLitz' Byambasuren",
             role: "IGL",
-            avatarUrl: "img/players/bLitz.jpg",
+            avatarUrl: "images/bLitz.jpg",
             stats: {
               kd: "35-46",
               adr: 72.5,
@@ -145,7 +145,7 @@
             name: "mzinho",
             fullName: "Ayush 'mzinho' Batbold",
             role: "Rifler",
-            avatarUrl: "img/players/mzinho.jpg",
+            avatarUrl: "images/mzinho.jpg",
             stats: {
               kd: "26-42",
               adr: 55.1,
@@ -157,7 +157,7 @@
             name: "910",
             fullName: "Usukhbayar '910' Banzragch",
             role: "Rifler",
-            avatarUrl: "img/players/910.jpg",
+            avatarUrl: "images/910.jpg",
             stats: {
               kd: "33-47",
               adr: 72.0,

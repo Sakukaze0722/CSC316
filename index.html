@@ -134,7 +134,19 @@
       <p>Vitality vs The MongolZ — BLAST.tv Austin Major 2025 Grand Final</p>
     </div>
 
-    <section id="mapControlSection">
+    <section class="fade-section" id="mapControlSection">
+      <div class="storyboard-text">
+        <h3>Territory in Motion: Map Control</h3>
+        <p>
+          In Counter-Strike, winning a round is often about owning the right space at the right time. Before a site execute or retake ever happens, both teams are constantly fighting for control of key lanes, chokepoints, and rotation routes.
+        </p>
+        <p>
+          This visualization turns every frame of player movement into a live territorial map. As players advance, reposition, or die, the boundary between CT and T influence shifts in real time across the radar.
+        </p>
+        <p>
+          <strong>Why it matters:</strong> It helps players and coaches see when a team truly has map presence, when a push is unsupported, and how much pressure each lineup creates before the decisive duel even begins.
+        </p>
+      </div>
       <h2>Map Control Analysis</h2>
       <p>How does territorial control shift between the two teams as each round progresses?</p>
       <div id="vis1" class="vis-container">
@@ -248,7 +260,19 @@
       </div>
     </section>
 
-    <section id="heatmap-section">
+    <section class="fade-section" id="heatmap-section">
+      <div class="storyboard-text">
+        <h3>Footprints of Strategy: Team Movement Heatmaps</h3>
+        <p>
+          A single round can look chaotic, but repeated over an entire series, movement patterns become strategy. Heatmaps reveal where players spend their time, which paths they trust, and which zones they consistently avoid.
+        </p>
+        <p>
+          By combining all rounds from both sides, this view exposes each team's spatial habits: defensive anchor zones, preferred attack routes, and the parts of the map where rotations naturally converge.
+        </p>
+        <p>
+          <strong>Why it matters:</strong> Coaches can use these hotspots to compare default structures, identify overused lanes, and prepare counter-play for the positions an opponent returns to most often.
+        </p>
+      </div>
       <h2>Team Movement Heatmaps</h2>
       <p>Player positioning patterns for each team on CT and T sides — Vitality vs The MongolZ, BLAST.tv Austin Major 2025.</p>
       <div class="hm-map-tabs">
@@ -268,15 +292,217 @@
   </div>
 
   <!-- ============================================================
-       Visualization 3: Placeholder
+       Visualization 3: Utility Lane Evolution
        ============================================================ -->
-  <div class="analysis-content" id="vis3Section">
+  <div class="analysis-content fade-section" id="vis3Section">
+    <div class="storyboard-text">
+      <h3>Tactical Artillery: Utility Evolution</h3>
+      <p>
+        At the highest level of Counter-Strike, raw aim isn't enough. Utility (grenades, smokes, flashes) is the tactical foundation that enables teams to take map control, execute site hits, or deny enemy advances.
+      </p>
+      <p>
+        By mapping out every piece of utility thrown by Team Vitality, we can visualize their "Utility Lanes"—the specific trajectories and lineups they rely on to execute their game plan.
+      </p>
+      <p>
+        <strong>Why it matters:</strong> This visualization reveals a team's tactical playbook. A coach can study these lanes to find gaps in their own utility usage or to prepare anti-strats by anticipating exactly where and when the opponent will deploy their grenades.
+      </p>
+    </div>
+
     <div class="analysis-header">
-      <h2>Visualization 3</h2>
-      <p>[Description placeholder]</p>
+      <h2>Utility Lane Evolution</h2>
+      <p>Vitality grenade trajectories across BLAST.tv Austin Major 2025 — throw origins to landing zones.</p>
     </div>
     <section>
-      <div id="vis3" class="vis-container"></div>
+      <div id="vis3" class="vis-container">
+        <div class="ul-wrapper">
+          <!-- Map selection buttons (top bar) -->
+          <div class="ul-controls">
+            <div class="ul-control-group">
+              <label>Map</label>
+              <div class="ul-map-tabs">
+                <div class="ul-map-tab active" data-map="de_mirage">Mirage</div>
+                <div class="ul-map-tab" data-map="de_dust2">Dust II</div>
+                <div class="ul-map-tab" data-map="de_inferno">Inferno</div>
+                <div class="ul-map-tab" data-map="de_train">Train</div>
+              </div>
+            </div>
+            <div class="ul-control-group">
+              <button class="ul-btn" id="ulReplayBtn">&#10227; Replay</button>
+            </div>
+            <div class="ul-stat-badge" id="ulStatBadge">0 trajectories</div>
+          </div>
+          <!-- Main body: canvas + sidebar -->
+          <div class="ul-body">
+            <div class="ul-map-area">
+              <div class="ul-map-container" id="ulMapContainer">
+                <img id="ulRadarImg" src="data/maps/de_mirage.png" alt="Radar map">
+                <canvas id="ulTrailCanvas" width="1024" height="1024"></canvas>
+              </div>
+              <!-- Legend below map -->
+              <div class="ul-legend">
+                <div class="ul-legend-item"><span class="ul-legend-dot" style="background:#4fc3f7"></span>Smoke</div>
+                <div class="ul-legend-item"><span class="ul-legend-dot" style="background:#fff176"></span>Flash</div>
+                <div class="ul-legend-item"><span class="ul-legend-dot" style="background:#ef5350"></span>HE</div>
+                <div class="ul-legend-item"><span class="ul-legend-dot" style="background:#ff9800"></span>Molotov</div>
+                <div class="ul-legend-item"><span class="ul-legend-line"></span>Throw &rarr; Land</div>
+              </div>
+            </div>
+            <!-- Sidebar filters -->
+            <div class="ul-sidebar">
+              <div class="ul-panel-card">
+                <h3>Side</h3>
+                <div class="ul-filter-group" id="ulSideFilter">
+                  <button class="ul-filter-btn active" data-value="all">All</button>
+                  <button class="ul-filter-btn" data-value="CT">CT</button>
+                  <button class="ul-filter-btn" data-value="T">T</button>
+                </div>
+              </div>
+              <div class="ul-panel-card">
+                <h3>Match</h3>
+                <div class="ul-filter-group" id="ulMatchFilter">
+                  <button class="ul-filter-btn active" data-value="all">All</button>
+                  <!-- dynamically populated -->
+                </div>
+              </div>
+              <div class="ul-panel-card">
+                <h3>Grenade Type</h3>
+                <div class="ul-filter-group" id="ulTypeFilter">
+                  <button class="ul-filter-btn active" data-value="all">All</button>
+                  <button class="ul-filter-btn" data-value="smoke">Smoke</button>
+                  <button class="ul-filter-btn" data-value="flash">Flash</button>
+                  <button class="ul-filter-btn" data-value="he">HE</button>
+                  <button class="ul-filter-btn" data-value="molotov">Molotov</button>
+                </div>
+              </div>
+              <div class="ul-panel-card">
+                <h3>Player</h3>
+                <div class="ul-filter-group" id="ulPlayerFilter">
+                  <button class="ul-filter-btn active" data-value="all">All</button>
+                  <button class="ul-filter-btn" data-value="apEX">apEX</button>
+                  <button class="ul-filter-btn" data-value="ZywOo">ZywOo</button>
+                  <button class="ul-filter-btn" data-value="flameZ">flameZ</button>
+                  <button class="ul-filter-btn" data-value="mezii">mezii</button>
+                  <button class="ul-filter-btn" data-value="Mzinho">Mzinho</button>
+                </div>
+              </div>
+              <div class="ul-panel-card ul-info">
+                <h3>How It Works</h3>
+                <p>
+                  Each arc connects a <strong>throw origin</strong> to its <strong>landing point</strong>.<br><br>
+                  <strong style="color:#4fc3f7">Blue = Smoke</strong><br>
+                  <strong style="color:#fff176">Yellow = Flash</strong><br>
+                  <strong style="color:#ef5350">Red = HE Grenade</strong><br>
+                  <strong style="color:#ff9800">Orange = Molotov</strong><br><br>
+                  Landing points are highlighted with glowing dots. All trajectories fade in simultaneously for a dense snapshot effect.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================================================
+       Visualization 4: Kill Vector Field
+       ============================================================ -->
+  <div class="analysis-content fade-section" id="vis4Section">
+    <div class="storyboard-text">
+      <h3>The Lethal Web: Kill Vectors</h3>
+      <p>
+        Every kill in Counter-Strike tells a story of positioning, timing, and crossfire. By connecting the exact location of the attacker to where their victim fell, we create a "Vector Field" of lethality.
+      </p>
+      <p>
+        This visualization plots those fatal shots as glowing tracer lines, categorized by weapon type. Dense webs of lines highlight the most dangerous angles on the map and the preferred engagement distances of different players.
+      </p>
+      <p>
+        <strong>Why it matters:</strong> Understanding these vectors helps players identify where they are most vulnerable to being peaked, and allows coaches to optimize their team's crossfire setups and post-plant positioning based on empirical match data.
+      </p>
+    </div>
+
+    <div class="analysis-header">
+      <h2>Kill Vector Field</h2>
+      <p>Vitality gun kills across BLAST.tv Austin Major 2025 — attacker positions to victim death locations.</p>
+    </div>
+    <section>
+      <div id="vis4" class="vis-container">
+        <div class="kv-wrapper">
+          <!-- Top controls -->
+          <div class="kv-controls">
+            <div class="kv-control-group">
+              <label>Map</label>
+              <div class="kv-map-tabs">
+                <div class="kv-map-tab active" data-map="de_mirage">Mirage</div>
+                <div class="kv-map-tab" data-map="de_dust2">Dust II</div>
+                <div class="kv-map-tab" data-map="de_inferno">Inferno</div>
+                <div class="kv-map-tab" data-map="de_train">Train</div>
+              </div>
+            </div>
+            <div class="kv-control-group">
+              <button class="kv-btn" id="kvReplayBtn">&#10227; Replay</button>
+            </div>
+            <div class="kv-stat-badge" id="kvStatBadge">0 kills</div>
+          </div>
+          <!-- Main body -->
+          <div class="kv-body">
+            <div class="kv-map-area">
+              <div class="kv-map-container" id="kvMapContainer">
+                <img id="kvRadarImg" src="data/maps/de_mirage.png" alt="Radar map">
+                <canvas id="kvCanvas" width="1024" height="1024"></canvas>
+              </div>
+              <!-- Legend -->
+              <div class="kv-legend">
+                <div class="kv-legend-item"><span class="kv-legend-dot" style="background:#42a5f5"></span>Pistol</div>
+                <div class="kv-legend-item"><span class="kv-legend-dot" style="background:#66bb6a"></span>SMG</div>
+                <div class="kv-legend-item"><span class="kv-legend-dot" style="background:#ffa726"></span>Rifle</div>
+                <div class="kv-legend-item"><span class="kv-legend-dot" style="background:#ab47bc"></span>Sniper</div>
+                <div class="kv-legend-item"><span class="kv-legend-dot" style="background:#ef5350"></span>Shotgun</div>
+                <div class="kv-legend-item"><span class="kv-legend-x">✕</span>Victim</div>
+              </div>
+            </div>
+            <!-- Sidebar filters -->
+            <div class="kv-sidebar">
+              <div class="kv-panel-card">
+                <h3>Side</h3>
+                <div class="kv-filter-group" id="kvSideFilter">
+                  <button class="kv-filter-btn active" data-value="all">All</button>
+                  <button class="kv-filter-btn" data-value="CT">CT</button>
+                  <button class="kv-filter-btn" data-value="T">T</button>
+                </div>
+              </div>
+              <div class="kv-panel-card">
+                <h3>Player</h3>
+                <div class="kv-filter-group" id="kvPlayerFilter">
+                  <button class="kv-filter-btn active" data-value="all">All</button>
+                  <button class="kv-filter-btn" data-value="apEX">apEX</button>
+                  <button class="kv-filter-btn" data-value="ZywOo">ZywOo</button>
+                  <button class="kv-filter-btn" data-value="flameZ">flameZ</button>
+                  <button class="kv-filter-btn" data-value="mezii">mezii</button>
+                  <button class="kv-filter-btn" data-value="Mzinho">Mzinho</button>
+                </div>
+              </div>
+              <div class="kv-panel-card">
+                <h3>Weapon</h3>
+                <div class="kv-filter-group" id="kvWeaponFilter">
+                  <button class="kv-filter-btn active" data-value="all">All</button>
+                  <button class="kv-filter-btn" data-value="pistol">Pistol</button>
+                  <button class="kv-filter-btn" data-value="smg">SMG</button>
+                  <button class="kv-filter-btn" data-value="rifle">Rifle</button>
+                  <button class="kv-filter-btn" data-value="sniper">Sniper</button>
+                  <button class="kv-filter-btn" data-value="shotgun">Shotgun</button>
+                </div>
+              </div>
+              <div class="kv-panel-card kv-info">
+                <h3>Reading the Map</h3>
+                <p>
+                  Each vector points from the <strong>attacker</strong> to the <strong>victim's death location</strong>, marked with a red <strong style="color:#ef5350">✕</strong>.<br><br>
+                  Arrowheads indicate the direction of fire. Color encodes weapon class. Headshots are shown with a brighter <strong style="color:#ef5350">✕</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -305,5 +531,31 @@
 
   <script src="js/main.js"></script>
   <script src="js/dashboard.js"></script>
+
+  <script>
+    // Set up Intersection Observer for fade-in sections
+    document.addEventListener("DOMContentLoaded", () => {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            
+            // Dispatch a custom event to trigger animations if needed
+            const event = new CustomEvent('sectionVisible', { detail: { id: entry.target.id } });
+            document.dispatchEvent(event);
+          } else {
+            entry.target.classList.remove('is-visible');
+
+            const event = new CustomEvent('sectionHidden', { detail: { id: entry.target.id } });
+            document.dispatchEvent(event);
+          }
+        });
+      }, { threshold: 0.15 }); // Trigger when 15% visible
+
+      document.querySelectorAll('.fade-section').forEach(section => {
+        observer.observe(section);
+      });
+    });
+  </script>
 </body>
 </html>

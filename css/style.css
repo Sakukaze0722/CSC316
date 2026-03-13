@@ -101,6 +101,53 @@ body {
 }
 
 /* === Analysis Content Layout === */
+.storyboard-text {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto 40px auto;
+  padding: 20px 30px;
+  background: var(--vis-bg-card);
+  border-left: 4px solid #58a6ff;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: background 0.4s, color 0.4s, opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+[data-theme="dark"] .storyboard-text {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.storyboard-text h3 {
+  font-size: 20px;
+  color: var(--vis-text-heading);
+  margin-top: 0;
+  margin-bottom: 12px;
+  transition: color 0.4s;
+}
+
+.storyboard-text p {
+  font-size: 15px;
+  color: var(--vis-text);
+  line-height: 1.6;
+  margin-bottom: 12px;
+  transition: color 0.4s;
+}
+
+.storyboard-text p:last-child {
+  margin-bottom: 0;
+}
+
+.fade-section {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.fade-section.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .analysis-content {
   max-width: 1100px;
   margin: 0 auto;
@@ -383,4 +430,245 @@ body {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* ========================================
+   Utility Lane Evolution (vis3)
+   ======================================== */
+#vis3.vis-container {
+  display: block;
+}
+.ul-wrapper { width: 100%; }
+
+.ul-controls {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  justify-content: center; align-items: center;
+  padding: 14px 16px;
+  background: var(--vis-bg-alt);
+  border: 1px solid var(--vis-border);
+  border-radius: 8px 8px 0 0;
+  transition: background 0.4s, border-color 0.4s;
+}
+.ul-control-group { display: flex; align-items: center; gap: 8px; }
+.ul-control-group label {
+  font-size: 12px; color: var(--vis-text-muted); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  transition: color 0.4s;
+}
+.ul-map-tabs { display: flex; gap: 4px; }
+.ul-map-tab {
+  padding: 6px 14px; background: var(--vis-tab-bg); border: 1px solid var(--vis-border-light);
+  border-radius: 6px; color: var(--vis-text-secondary); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.ul-map-tab:hover { background: var(--vis-tab-hover); }
+.ul-map-tab.active { background: var(--vis-tab-active-bg); border-color: var(--vis-tab-active-border); color: var(--vis-tab-active-color); }
+
+.ul-btn {
+  padding: 6px 14px; background: var(--vis-input-bg); border: 1px solid var(--vis-border-light);
+  border-radius: 6px; color: var(--vis-text); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.ul-btn:hover { background: var(--vis-tab-hover); }
+
+.ul-stat-badge {
+  font-size: 12px; font-weight: 600; color: var(--vis-text-muted);
+  padding: 4px 12px; border-radius: 999px;
+  background: var(--vis-bg-card); border: 1px solid var(--vis-border);
+  transition: all 0.4s;
+}
+
+.ul-body {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  padding: 16px;
+  background: var(--vis-bg);
+  border: 1px solid var(--vis-border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  transition: background 0.4s, border-color 0.4s;
+}
+
+.ul-map-area { flex-shrink: 0; }
+.ul-map-container {
+  position: relative; width: 560px; height: 560px;
+  border-radius: 8px; overflow: hidden;
+  border: 2px solid var(--vis-border-light); background: #000;
+  transition: border-color 0.4s;
+}
+.ul-map-container img {
+  width: 100%; height: 100%; display: block;
+  position: absolute; top: 0; left: 0;
+}
+#ulTrailCanvas {
+  position: absolute; top: 0; left: 0;
+  width: 560px; height: 560px;
+  pointer-events: none;
+}
+
+.ul-legend {
+  display: flex; gap: 16px; justify-content: center;
+  padding: 10px 0 2px; flex-wrap: wrap;
+}
+.ul-legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--vis-text-muted); font-weight: 600;
+  transition: color 0.4s;
+}
+.ul-legend-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block; box-shadow: 0 0 6px currentColor;
+}
+.ul-legend-line {
+  width: 24px; height: 2px; display: inline-block;
+  background: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.1));
+  border-radius: 1px;
+}
+
+.ul-sidebar { flex: 1; min-width: 220px; }
+.ul-panel-card {
+  background: var(--vis-bg-card); border: 1px solid var(--vis-border);
+  border-radius: 8px; padding: 14px; margin-bottom: 14px;
+  transition: background 0.4s, border-color 0.4s;
+}
+.ul-panel-card h3 {
+  font-size: 13px; color: var(--vis-text-heading); margin-bottom: 10px; font-weight: 600;
+  transition: color 0.4s;
+}
+
+.ul-filter-group {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.ul-filter-btn {
+  padding: 4px 10px; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--vis-border-light); border-radius: 6px;
+  background: var(--vis-tab-bg); color: var(--vis-text-secondary);
+  cursor: pointer; transition: all 0.15s;
+}
+.ul-filter-btn:hover { background: var(--vis-tab-hover); }
+.ul-filter-btn.active {
+  background: var(--vis-tab-active-bg); border-color: var(--vis-tab-active-border);
+  color: var(--vis-tab-active-color);
+}
+
+.ul-info p {
+  font-size: 11px; color: var(--vis-text-muted); line-height: 1.6;
+  transition: color 0.4s;
+}
+
+/* ========================================
+   Kill Vector Field (vis4)
+   ======================================== */
+#vis4.vis-container { display: block; }
+.kv-wrapper { width: 100%; }
+
+.kv-controls {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  justify-content: center; align-items: center;
+  padding: 14px 16px;
+  background: var(--vis-bg-alt);
+  border: 1px solid var(--vis-border);
+  border-radius: 8px 8px 0 0;
+  transition: background 0.4s, border-color 0.4s;
+}
+.kv-control-group { display: flex; align-items: center; gap: 8px; }
+.kv-control-group label {
+  font-size: 12px; color: var(--vis-text-muted); font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  transition: color 0.4s;
+}
+.kv-map-tabs { display: flex; gap: 4px; }
+.kv-map-tab {
+  padding: 6px 14px; background: var(--vis-tab-bg); border: 1px solid var(--vis-border-light);
+  border-radius: 6px; color: var(--vis-text-secondary); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.kv-map-tab:hover { background: var(--vis-tab-hover); }
+.kv-map-tab.active { background: var(--vis-tab-active-bg); border-color: var(--vis-tab-active-border); color: var(--vis-tab-active-color); }
+
+.kv-btn {
+  padding: 6px 14px; background: var(--vis-input-bg); border: 1px solid var(--vis-border-light);
+  border-radius: 6px; color: var(--vis-text); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.kv-btn:hover { background: var(--vis-tab-hover); }
+
+.kv-stat-badge {
+  font-size: 12px; font-weight: 600; color: var(--vis-text-muted);
+  padding: 4px 12px; border-radius: 999px;
+  background: var(--vis-bg-card); border: 1px solid var(--vis-border);
+  transition: all 0.4s;
+}
+
+.kv-body {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  padding: 16px;
+  background: var(--vis-bg);
+  border: 1px solid var(--vis-border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  transition: background 0.4s, border-color 0.4s;
+}
+
+.kv-map-area { flex-shrink: 0; }
+.kv-map-container {
+  position: relative; width: 560px; height: 560px;
+  border-radius: 8px; overflow: hidden;
+  border: 2px solid var(--vis-border-light); background: #000;
+  transition: border-color 0.4s;
+}
+.kv-map-container img {
+  width: 100%; height: 100%; display: block;
+  position: absolute; top: 0; left: 0;
+}
+#kvCanvas {
+  position: absolute; top: 0; left: 0;
+  width: 560px; height: 560px;
+  pointer-events: none;
+}
+
+.kv-legend {
+  display: flex; gap: 16px; justify-content: center;
+  padding: 10px 0 2px; flex-wrap: wrap;
+}
+.kv-legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--vis-text-muted); font-weight: 600;
+  transition: color 0.4s;
+}
+.kv-legend-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block; box-shadow: 0 0 6px currentColor;
+}
+.kv-legend-x {
+  font-size: 14px; font-weight: 700; color: #ef5350;
+  line-height: 1; margin-right: 2px;
+}
+
+.kv-sidebar { flex: 1; min-width: 220px; }
+.kv-panel-card {
+  background: var(--vis-bg-card); border: 1px solid var(--vis-border);
+  border-radius: 8px; padding: 14px; margin-bottom: 14px;
+  transition: background 0.4s, border-color 0.4s;
+}
+.kv-panel-card h3 {
+  font-size: 13px; color: var(--vis-text-heading); margin-bottom: 10px; font-weight: 600;
+  transition: color 0.4s;
+}
+
+.kv-filter-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.kv-filter-btn {
+  padding: 4px 10px; font-size: 12px; font-weight: 600;
+  border: 1px solid var(--vis-border-light); border-radius: 6px;
+  background: var(--vis-tab-bg); color: var(--vis-text-secondary);
+  cursor: pointer; transition: all 0.15s;
+}
+.kv-filter-btn:hover { background: var(--vis-tab-hover); }
+.kv-filter-btn.active {
+  background: var(--vis-tab-active-bg); border-color: var(--vis-tab-active-border);
+  color: var(--vis-tab-active-color);
+}
+
+.kv-info p {
+  font-size: 11px; color: var(--vis-text-muted); line-height: 1.6;
+  transition: color 0.4s;
 }

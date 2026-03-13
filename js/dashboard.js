@@ -13,8 +13,8 @@
 
   const THEME_COLORS = {
     dark: {
-      cs: { base: "#334155", hover: "#475569", active: "#3b82f6", glow: "rgba(59,130,246,0.45)", stroke: "#334155" },
-      dota2: { base: "#334155", hover: "#475569", active: "#8b5cf6", glow: "rgba(139,92,246,0.45)", stroke: "#334155" },
+      cs: { base: "#334155", hover: "#475569", active: "#3b82f6", glow: "rgba(59,130,246,0.45)", stroke: "rgba(255, 255, 255, 0.15)" },
+      dota2: { base: "#334155", hover: "#475569", active: "#8b5cf6", glow: "rgba(139,92,246,0.45)", stroke: "rgba(255, 255, 255, 0.15)" },
     },
     light: {
       cs: { base: "#cbd5e1", hover: "#94a3b8", active: "#3b82f6", glow: "rgba(59,130,246,0.35)", stroke: "#94a3b8" },
@@ -1657,12 +1657,10 @@
     if (!soundToggle) return;
     soundEnabled = localStorage.getItem(SOUND_STORAGE_KEY) === "on";
     soundToggle.classList.toggle("muted", !soundEnabled);
-    soundToggle.textContent = soundEnabled ? "SOUND" : "MUTE";
     soundToggle.addEventListener("click", () => {
       soundEnabled = !soundEnabled;
       localStorage.setItem(SOUND_STORAGE_KEY, soundEnabled ? "on" : "off");
       soundToggle.classList.toggle("muted", !soundEnabled);
-      soundToggle.textContent = soundEnabled ? "SOUND" : "MUTE";
       playTone("soft");
     });
   }

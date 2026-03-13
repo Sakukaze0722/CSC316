@@ -5,7 +5,10 @@
 
 (function () {
   const WORLD_ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-  const PLAYER_STATS_URL = "data/player_data_csgo/hltv_playerStats-complete.csv";
+  const CS_PLAYER_STATS_URL = "data/player_data_csgo/hltv_playerStats-complete.csv";
+  const DOTA_MATCH_DATA_URL = "data/player_data_dota2/current_player_match_data.json";
+  const DOTA_ACTIVE_ROSTERS_URL = "data/player_data_dota2/dota2_active_rosters.csv";
+  const DOTA_LIQUIPEDIA_PLAYERS_URL = "data/player_data_dota2/dota2_liquipedia_players.csv";
   const HLTV_ENRICH_URL = "https://hltv-api.vercel.app/api/player.json";
   const HLTV_OVERRIDES_URL = "data/hltv_player_overrides.json";
   const THEME_STORAGE_KEY = "dashboard-theme";
@@ -22,7 +25,6 @@
     },
   };
 
-  const TOP_COUNTRIES_DOTA = ["China", "Russia", "Philippines", "Indonesia", "Malaysia", "Thailand", "Ukraine", "Peru", "Brazil", "Sweden"];
   const ACHIEVEMENTS = [
     { label: "Explorer I", threshold: 3 },
     { label: "Explorer II", threshold: 8 },
@@ -51,6 +53,71 @@
     Romania: "RO", Russia: "RU", Serbia: "RS", Singapore: "SG", Slovakia: "SK", Slovenia: "SI", "South Africa": "ZA",
     Spain: "ES", Sweden: "SE", Switzerland: "CH", Taiwan: "TW", Thailand: "TH", Tunisia: "TN", Turkey: "TR", Ukraine: "UA",
     "United Arab Emirates": "AE", "United Kingdom": "GB", "United States": "US", Uruguay: "UY", Uzbekistan: "UZ", Vietnam: "VN",
+  };
+  const DOTA_COUNTRY_ALIASES = {
+    ad: "Andorra",
+    af: "Afghanistan",
+    al: "Albania",
+    ar: "Argentina",
+    au: "Australia",
+    ba: "Bosnia and Herzegovina",
+    br: "Brazil",
+    ca: "Canada",
+    ch: "Switzerland",
+    cl: "Chile",
+    cn: "China",
+    cz: "Czech Republic",
+    de: "Germany",
+    dk: "Denmark",
+    ee: "Estonia",
+    es: "Spain",
+    fi: "Finland",
+    fr: "France",
+    gb: "United Kingdom",
+    hu: "Hungary",
+    id: "Indonesia",
+    il: "Israel",
+    in: "India",
+    ir: "Iran",
+    it: "Italy",
+    jo: "Jordan",
+    kz: "Kazakhstan",
+    lb: "Lebanon",
+    lv: "Latvia",
+    my: "Malaysia",
+    mn: "Mongolia",
+    nl: "Netherlands",
+    no: "Norway",
+    nz: "New Zealand",
+    pe: "Peru",
+    ph: "Philippines",
+    pk: "Pakistan",
+    pl: "Poland",
+    pt: "Portugal",
+    ro: "Romania",
+    rs: "Serbia",
+    ru: "Russia",
+    se: "Sweden",
+    sg: "Singapore",
+    th: "Thailand",
+    tr: "Turkey",
+    tw: "Taiwan",
+    ua: "Ukraine",
+    us: "United States",
+    vn: "Vietnam",
+    "south korea": "Korea",
+    "republic of korea": "Korea",
+    uk: "United Kingdom",
+    usa: "United States",
+    cis: null,
+    europe: null,
+    eu: null,
+    na: null,
+    sa: null,
+    sea: null,
+    mena: null,
+    weu: null,
+    eeu: null,
   };
 
   const RADAR_METRICS = [
@@ -84,6 +151,7 @@
   let detailPlayerQuery = "";
   let detailPlayerPage = 1;
   let detailTeamFilter = null;
+  let selectedInlinePlayerId = null;
   let mapScale = 1;
   let mapPanX = 0;
   let mapPanY = 0;
@@ -97,6 +165,7 @@
   let metricExtents = {};
   let globalMetricAverages = { ...EMPTY_METRIC_PROFILE };
   let clubCountries = new Map();
+  const gameSnapshots = { cs: null, dota2: null };
 
   const mapContainer = document.getElementById("worldMap");
   const mapFocusOverlay = document.getElementById("mapFocusOverlay");
@@ -122,6 +191,8 @@
   const storyCards = [...document.querySelectorAll(".story-card")];
   const soundToggle = document.getElementById("soundToggle");
   const particlesCanvas = document.getElementById("particlesCanvas");
+  const dotaPlayerDashboardSection = document.getElementById("dotaPlayerDashboardSection");
+  const dotaPlayerDashboardContent = document.getElementById("dotaPlayerDashboardContent");
 
   const playerModal = document.getElementById("playerDashboardModal");
   const playerModalBackdrop = document.getElementById("playerDashboardBackdrop");
@@ -241,6 +312,125 @@
       series: Array.from({ length: 12 }, (_, i) => 35 + ((s >> (i % 8)) + i * 7) % 55),
     };
   }
+
+  function countryFromCode(code) {
+    const clean = String(code || "").trim();
+    if (!clean) return null;
+    const alias = DOTA_COUNTRY_ALIASES[clean.toLowerCase()];
+    if (alias !== undefined) return alias;
+    if (/^[A-Za-z]{2}$/.test(clean)) {
+      try {
+        const dn = new Intl.DisplayNames(["en"], { type: "region" });
+        return dn.of(clean.toUpperCase()) || null;
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function canonicalDotaCountry(rawCountry, rawCode = "") {
+    const text = String(rawCountry || "").trim();
+    const norm = normCountry(text);
+    if (norm) {
+      if (Object.prototype.hasOwnProperty.call(DOTA_COUNTRY_ALIASES, norm)) {
+        return DOTA_COUNTRY_ALIASES[norm];
+      }
+      if (MAP_ALIAS_TO_DATA[norm]) return MAP_ALIAS_TO_DATA[norm];
+      if (COUNTRY_CODE[text]) return text;
+    }
+    const fromCode = countryFromCode(rawCode || rawCountry);
+    if (fromCode) return MAP_ALIAS_TO_DATA[normCountry(fromCode)] || fromCode;
+    if (text && COUNTRY_CODE[text]) return text;
+    return null;
+  }
+
+  function setActiveData(game) {
+    const snapshot = gameSnapshots[game];
+    if (!snapshot) return;
+    players = snapshot.players;
+    playerById = snapshot.playerById;
+    countryData = snapshot.countryData;
+    countryLookup = snapshot.countryLookup;
+    countryRank = snapshot.countryRank;
+    metricExtents = snapshot.metricExtents;
+    globalMetricAverages = snapshot.globalMetricAverages;
+    clubCountries = snapshot.clubCountries;
+    selectedCountryProfile = selectedCountryName ? countryData.get(resolveCountryForMap(selectedCountryName)) || null : null;
+  }
+
+  function hasUsableImage(url) {
+    const value = String(url || "").trim();
+    return /^https?:\/\//i.test(value);
+  }
+
+  function hasLikelyPlayerPhoto(url) {
+    const value = String(url || "").trim();
+    if (!/^https?:\/\//i.test(value)) return false;
+    const lowered = value.toLowerCase();
+    return ![
+      "itemicon",
+      "gameasset",
+      "_allmode",
+      "_lightmode",
+      "logo",
+      "icon_dota2",
+      "_icon.",
+      "/heroes/icons/",
+    ].some((marker) => lowered.includes(marker));
+  }
+
+  function isPlaceholderTeamName(team) {
+    const value = String(team || "").trim();
+    if (!value) return true;
+    if (/^\{\{.*\}\}$/.test(value)) return true;
+    if (/^\d+(\.\d+){0,3}$/.test(value)) return true;
+    if (/[\\/]/.test(value)) return true;
+    if (/^(unaffiliated|unknown|n\/a|null)$/i.test(value)) return true;
+    return false;
+  }
+
+  function normalizeDotaTeamName(team) {
+    const value = String(team || "").trim();
+    return isPlaceholderTeamName(value) ? "" : value;
+  }
+
+  function dotaKda(player) {
+    return (num(player.avgKills) + num(player.avgAssists)) / Math.max(num(player.avgDeaths), 1);
+  }
+
+  function dotaKdaLabel(player) {
+    return `${num(player.avgKills).toFixed(1)} / ${num(player.avgDeaths).toFixed(1)} / ${num(player.avgAssists).toFixed(1)}`;
+  }
+
+  function dotaWinRate(player) {
+    return Number.isFinite(player.winRate) ? player.winRate : 0;
+  }
+
+  function formatDuration(seconds) {
+    const total = Math.max(0, Math.round(num(seconds)));
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    return `${mins}:${String(secs).padStart(2, "0")}`;
+  }
+
+  function clearDotaPlayerDashboard() {
+    if (!dotaPlayerDashboardSection || !dotaPlayerDashboardContent) return;
+    dotaPlayerDashboardSection.classList.add("hidden");
+    dotaPlayerDashboardContent.innerHTML = "";
+  }
+
+  function chooseDotaPhoto(entry) {
+    const candidates = [
+      entry.preferredPhotoUrl,
+      entry.seedPhotoUrl,
+      entry.photo_url,
+      entry.opendota_avatar,
+    ]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
+    return candidates.find((value) => hasLikelyPlayerPhoto(value)) || candidates.find((value) => hasUsableImage(value)) || "";
+  }
   function canonicalDataCountry(raw) {
     const norm = normCountry(raw);
     return MAP_ALIAS_TO_DATA[norm] || raw;
@@ -309,7 +499,7 @@
    * This model intentionally includes both "source stats" and "future enrichment"
    * fields so UI rendering stays deterministic even before HLTV data arrives.
    */
-  function toPlayer(row, index) {
+  function toCSPlayer(row, index) {
     // hltv_playerStats-complete.csv uses "nick" for in-game name
     const name = String(row.nick || row.name || "").trim();
     const countryRaw = String(row.country || "").trim();
@@ -348,36 +538,94 @@
     };
   }
 
+  function createDotaAggregatePlayer(name, country, entry, index) {
+    const teams = Array.isArray(entry.teams) ? entry.teams.filter(Boolean).map((t) => String(t).trim()).filter(Boolean) : [];
+    const photo = chooseDotaPhoto(entry);
+    const matchSummary = entry.match_summary || {};
+    const matchCount = num(matchSummary.match_count);
+    if (!teams.length || !hasUsableImage(photo) || matchCount <= 0) return null;
+    const wins = num(matchSummary.wins);
+    const winRate = matchCount > 0 ? (wins / matchCount) * 100 : 0;
+    const avgKills = num(matchSummary.avg_kills);
+    const avgDeaths = num(matchSummary.avg_deaths);
+    const avgAssists = num(matchSummary.avg_assists);
+    const avgGpm = num(matchSummary.avg_gpm);
+    const avgXpm = num(matchSummary.avg_xpm);
+    const fallbackAvatar = photo;
+    return {
+      id: `dota-${index}-${hashCode(`${name}-${country}`)}`,
+      game: "dota2",
+      name,
+      country,
+      teams,
+      teamCount: teams.length,
+      total_maps: matchCount,
+      total_rounds: wins,
+      kd_diff: avgKills - avgDeaths,
+      kd: dotaKda({ avgKills, avgDeaths, avgAssists }),
+      rating: winRate,
+      avatar: fallbackAvatar,
+      avatarFallback: fallbackAvatar,
+      fullname: String(entry.opendota_name || name).trim(),
+      accountId: entry.account_id || null,
+      winRate,
+      wins,
+      matchCount,
+      avgKills,
+      avgDeaths,
+      avgAssists,
+      avgGpm,
+      avgXpm,
+      recentMatches: Array.isArray(entry.recent_matches) ? entry.recent_matches : [],
+      hltvId: null,
+      hltvIgn: name,
+      hltvCountry: country,
+      hltvCountryCode: COUNTRY_CODE[country] || null,
+      hltvAge: null,
+      hltvStats: null,
+      hltvCurrentTeam: teams[0] ? { id: null, name: teams[0], ranking: null } : null,
+      hltvTeamsHistory: [],
+      hltvNews: [],
+      hltvSocials: null,
+      hltvUrl: entry.account_id ? `https://www.opendota.com/players/${entry.account_id}` : "",
+      liquipediaTitle: String(entry.liquipedia_title || "").trim(),
+    };
+  }
+
   /**
    * Rebuild all cross-country aggregates from the currently loaded player list.
    * We call this once after loading to keep every downstream chart in sync with one
    * source of truth (country panel, radar extents, rankings, mode baselines).
    */
-  function buildData(records) {
-    playerById = new Map();
-    countryData = new Map();
-    countryLookup = new Map();
-     clubCountries = new Map();
+  function buildData(records, game) {
+    const nextPlayerById = new Map();
+    const nextCountryData = new Map();
+    const nextCountryLookup = new Map();
+    const nextClubCountries = new Map();
 
-    records.forEach((p) => playerById.set(p.id, p));
+    records.forEach((p) => nextPlayerById.set(p.id, p));
     const grouped = d3.group(records, (p) => p.country);
 
     grouped.forEach((list, country) => {
-      const sorted = list.slice().sort((a, b) => d3.descending(a.rating, b.rating) || d3.descending(a.kd, b.kd));
+      const sorted = list
+        .slice()
+        .sort((a, b) => d3.descending(a.rating, b.rating) || d3.descending(a.teamCount, b.teamCount));
       const teamSet = new Set();
       sorted.forEach((p) => {
         p.teams.forEach((t) => {
           const name = t || "Unaffiliated";
           teamSet.add(name);
-          let set = clubCountries.get(name);
+          let set = nextClubCountries.get(name);
           if (!set) {
             set = new Set();
-            clubCountries.set(name, set);
+            nextClubCountries.set(name, set);
           }
           set.add(country);
         });
       });
+
       const profile = {
+        game,
         country,
         players: sorted,
         playerCount: sorted.length,
@@ -388,17 +636,38 @@
         totalRounds: d3.sum(sorted, (p) => p.total_rounds),
         teamCount: teamSet.size,
       };
-      countryData.set(country, profile);
-      countryLookup.set(normCountry(country), country);
+
+      if (game === "dota2") {
+        profile.totalMatchSamples = d3.sum(sorted, (p) => p.matchCount || 0);
+        profile.totalWins = d3.sum(sorted, (p) => p.wins || 0);
+        profile.avgWinRate = d3.mean(sorted, (p) => p.winRate) || 0;
+        profile.avgKills = d3.mean(sorted, (p) => p.avgKills) || 0;
+        profile.avgDeaths = d3.mean(sorted, (p) => p.avgDeaths) || 0;
+        profile.avgAssists = d3.mean(sorted, (p) => p.avgAssists) || 0;
+        profile.avgGpm = d3.mean(sorted, (p) => p.avgGpm) || 0;
+        profile.avgXpm = d3.mean(sorted, (p) => p.avgXpm) || 0;
+      }
+
+      nextCountryData.set(country, profile);
+      nextCountryLookup.set(normCountry(country), country);
     });
 
     Object.entries(MAP_ALIAS_TO_DATA).forEach(([alias, target]) => {
-      if (countryData.has(target)) countryLookup.set(alias, target);
+      if (nextCountryData.has(target)) nextCountryLookup.set(alias, target);
     });
 
-    countryRank = Array.from(countryData.values()).sort((a, b) => d3.descending(a.avgRating, b.avgRating) || d3.descending(a.playerCount, b.playerCount));
+    const nextCountryRank = Array.from(nextCountryData.values()).sort((a, b) => {
+      if (game === "dota2") {
+        return (
+          d3.descending(a.playerCount, b.playerCount) ||
+          d3.descending(a.avgWinRate || 0, b.avgWinRate || 0) ||
+          d3.descending(a.teamCount, b.teamCount)
+        );
+      }
+      return d3.descending(a.avgRating, b.avgRating) || d3.descending(a.playerCount, b.playerCount);
+    });
 
-    metricExtents = {
+    const nextMetricExtents = {
       rating: d3.extent(records, (p) => p.rating),
       kd: d3.extent(records, (p) => p.kd),
       kd_diff: d3.extent(records, (p) => p.kd_diff),
@@ -406,7 +675,17 @@
       total_rounds: d3.extent(records, (p) => p.total_rounds),
       teamCount: d3.extent(records, (p) => p.teamCount),
     };
-    globalMetricAverages = averageMetricsFromPlayers(records);
+
+    return {
+      players: records,
+      playerById: nextPlayerById,
+      countryData: nextCountryData,
+      countryLookup: nextCountryLookup,
+      countryRank: nextCountryRank,
+      metricExtents: nextMetricExtents,
+      globalMetricAverages: averageMetricsFromPlayers(records),
+      clubCountries: nextClubCountries,
+    };
   }
 
   /**
@@ -559,12 +838,45 @@
     }
   }
 
-  async function loadPlayers() {
-    const rows = await d3.csv(PLAYER_STATS_URL);
-    players = rows.map((row, i) => toPlayer(row, i)).filter(Boolean);
+  async function loadCSPlayers() {
+    const rows = await d3.csv(CS_PLAYER_STATS_URL);
+    const csPlayers = rows.map((row, i) => toCSPlayer(row, i)).filter(Boolean);
+    players = csPlayers;
     await applyHLTVOverrides();
     await enrichPlayersFromHLTV();
-    buildData(players);
+    gameSnapshots.cs = buildData(players, "cs");
+  }
+
+  async function loadDotaPlayers() {
+    const [payload, activeRows, liquipediaRows] = await Promise.all([
+      d3.json(DOTA_MATCH_DATA_URL),
+      d3.csv(DOTA_ACTIVE_ROSTERS_URL),
+      d3.csv(DOTA_LIQUIPEDIA_PLAYERS_URL),
+    ]);
+
+    const photoLookup = new Map();
+    const storePhoto = (country, name, url) => {
+      const photo = String(url || "").trim();
+      const canonicalCountry = canonicalDotaCountry(country) || String(country || "").trim();
+      if (!canonicalCountry || !name || !hasLikelyPlayerPhoto(photo)) return;
+      photoLookup.set(`${normalizePlayerName(name)}::${normCountry(canonicalCountry)}`, photo);
+    };
+    activeRows.forEach((row) => storePhoto(row.country, row.player_name, row.player_headshot_url));
+    liquipediaRows.forEach((row) => storePhoto(row.country, row.player_name, row.player_headshot_url));
+
+    const dotaPlayers = (Array.isArray(payload) ? payload : [])
+      .map((entry) => {
+        const playerName = String(entry.player_name || "").trim();
+        const country = canonicalDotaCountry(entry.country) || String(entry.country || "").trim();
+        return {
+          ...entry,
+          preferredPhotoUrl: photoLookup.get(`${normalizePlayerName(playerName)}::${normCountry(country)}`) || "",
+        };
+      })
+      .map((entry, index) => createDotaAggregatePlayer(String(entry.player_name || "").trim(), canonicalDotaCountry(entry.country) || String(entry.country || "").trim(), entry, index))
+      .filter(Boolean);
+
+    gameSnapshots.dota2 = buildData(dotaPlayers, "dota2");
   }
 
   function countryProfileByFeature(feature) {
@@ -575,11 +887,20 @@
   function countryFill(feature) {
     const colors = getGameColors();
     if (feature === selectedCountry) return colors.active;
-    if (currentGame !== "cs") return colors.base;
     const profile = countryProfileByFeature(feature);
-    if (!profile || !countryRank.length) return colors.base;
-    const intensity = clamp(profile.playerCount / (countryRank[0].playerCount || 1), 0, 1);
-    return d3.interpolateRgb(colors.base, colors.active)(0.2 + 0.6 * intensity);
+    if (!profile || !countryRank.length) return currentGame === "dota2" ? colors.base : colors.base;
+    const topValue = currentGame === "dota2"
+      ? (countryRank[0].playerCount || 1)
+      : countryRank[0].playerCount;
+    const currentValue = currentGame === "dota2"
+      ? (profile.playerCount || 0)
+      : profile.playerCount;
+    const intensity = clamp(currentValue / Math.max(topValue, 1), 0, 1);
+    return d3.interpolateRgb(colors.base, colors.active)(currentGame === "dota2" ? 0.22 + 0.68 * intensity : 0.2 + 0.6 * intensity);
+  }
+
+  function countryOpacity(feature) {
+    return 1;
   }
 
   function playTone(type = "soft") {
@@ -602,7 +923,8 @@
 
   function renderDrawer() {
     if (!drawerTitle || !drawerList) return;
-    if (currentGame === "cs" && countryRank.length) {
+    if (!countryRank.length) return;
+    if (currentGame === "cs") {
       drawerTitle.textContent = "Counter-Strike Top Countries";
       drawerList.innerHTML = countryRank
         .slice(0, 10)
@@ -611,11 +933,12 @@
       return;
     }
     drawerTitle.textContent = "DOTA 2 Top Countries";
-    drawerList.innerHTML = TOP_COUNTRIES_DOTA
+    drawerList.innerHTML = countryRank
       .map((name, i) => {
-        const m = mockMetrics(name, "dota2");
-        return `<li><span>${i + 1}. ${esc(flagEmoji(name))} ${esc(name)}</span><strong>${m.winRate}%</strong></li>`;
+        const profile = typeof name === "string" ? countryData.get(name) : name;
+        return `<li><span>${i + 1}. ${esc(flagEmoji(profile.country))} ${esc(profile.country)}</span><strong>${profile.avgWinRate.toFixed(1)}%</strong></li>`;
       })
+      .slice(0, 10)
       .join("");
   }
 
@@ -810,6 +1133,219 @@
     return copy;
   }
 
+  function playerListMeta(player) {
+    if (currentGame === "dota2") {
+      return `WR ${dotaWinRate(player).toFixed(0)}% | KDA ${dotaKda(player).toFixed(2)}`;
+    }
+    return player.hltvCurrentTeam?.name ? `HLTV: ${player.hltvCurrentTeam.name}` : `${player.teamCount} teams`;
+  }
+
+  function playerListScore(player) {
+    if (currentGame === "dota2") return `${player.matchCount} matches`;
+    return `R ${player.rating.toFixed(2)}`;
+  }
+
+  function getPrimaryTeam(player) {
+    return player.teams && player.teams.length ? player.teams[0] : "Unaffiliated";
+  }
+
+  function filteredCountryPlayers() {
+    if (!selectedCountryProfile) return [];
+    const query = detailPlayerQuery.trim().toLowerCase();
+    const sorted = sortPlayers(selectedCountryProfile.players, detailPlayerSort);
+    return sorted.filter((p) => {
+      const matchesQuery =
+        !query ||
+        p.name.toLowerCase().includes(query) ||
+        p.teams.some((t) => t.toLowerCase().includes(query));
+      const matchesTeam =
+        !detailTeamFilter ||
+        getPrimaryTeam(p).toLowerCase() === detailTeamFilter.toLowerCase();
+      return matchesQuery && matchesTeam;
+    });
+  }
+
+  function renderDotaInlinePlayerDashboard(playerId) {
+    const host = dotaPlayerDashboardContent;
+    if (!host || !dotaPlayerDashboardSection) return;
+    const player = playerById.get(playerId);
+    if (!player) {
+      host.innerHTML = "";
+      dotaPlayerDashboardSection.classList.add("hidden");
+      return;
+    }
+
+    selectedInlinePlayerId = playerId;
+    dotaPlayerDashboardSection.classList.remove("hidden");
+    const displayCountry = player.country;
+    const flag = flagImg(displayCountry);
+    const recentRows = player.recentMatches || [];
+
+    host.innerHTML = `
+      <section class="inline-player-dashboard">
+        <div class="inline-player-head">
+          <div class="inline-player-headline">
+            <img class="player-dash-avatar" src="${player.avatar}" data-fallback="${player.avatarFallback}" alt="${esc(player.name)} avatar">
+            <div>
+              <h4>${esc(player.fullname || player.name)}</h4>
+              <div class="player-dash-country">${flag ? `<img class="flag-image player-flag" src="${flag}" alt="${esc(displayCountry)} flag">` : ""}<span>${esc(flagEmoji(displayCountry))} ${esc(displayCountry)}</span></div>
+              <div class="player-current-team">Known teams: ${player.teams.length ? esc(player.teams.join(", ")) : "N/A"}</div>
+              <div class="player-current-team">${player.accountId ? `OpenDota account: ${player.accountId}` : "No OpenDota account matched"}</div>
+            </div>
+          </div>
+          <button class="inline-player-close" type="button" id="inlinePlayerClose" aria-label="Close player dashboard">&times;</button>
+        </div>
+
+        <div class="player-dash-kpis">
+          <div class="player-kpi-card"><span class="player-kpi-label">Win Rate</span><span class="player-kpi-value">${dotaWinRate(player).toFixed(1)}%</span></div>
+          <div class="player-kpi-card"><span class="player-kpi-label">Matches</span><span class="player-kpi-value">${player.matchCount}</span></div>
+          <div class="player-kpi-card"><span class="player-kpi-label">K / D / A</span><span class="player-kpi-value">${dotaKdaLabel(player)}</span></div>
+          <div class="player-kpi-card"><span class="player-kpi-label">GPM / XPM</span><span class="player-kpi-value">${player.avgGpm.toFixed(0)} / ${player.avgXpm.toFixed(0)}</span></div>
+        </div>
+
+        <div class="player-viz-grid">
+          <section class="player-viz-card">
+            <div class="player-viz-card-head">
+              <h4>Recent Match Summary</h4>
+            </div>
+            <div class="player-mini-bars">
+              <div class="player-mini-bar-row">
+                <div class="player-mini-bar-head"><span>Average kills</span><span class="player-mini-bar-values"><span class="player-mini-bar-player">${player.avgKills.toFixed(1)}</span></span></div>
+                <div class="player-mini-bar-track"><div class="player-mini-bar-fill" style="width:${Math.min(100, player.avgKills * 5)}%"></div></div>
+              </div>
+              <div class="player-mini-bar-row">
+                <div class="player-mini-bar-head"><span>Average deaths</span><span class="player-mini-bar-values"><span class="player-mini-bar-player">${player.avgDeaths.toFixed(1)}</span></span></div>
+                <div class="player-mini-bar-track"><div class="player-mini-bar-fill" style="width:${Math.min(100, player.avgDeaths * 7)}%"></div></div>
+              </div>
+              <div class="player-mini-bar-row">
+                <div class="player-mini-bar-head"><span>Average assists</span><span class="player-mini-bar-values"><span class="player-mini-bar-player">${player.avgAssists.toFixed(1)}</span></span></div>
+                <div class="player-mini-bar-track"><div class="player-mini-bar-fill" style="width:${Math.min(100, player.avgAssists * 3.5)}%"></div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="player-viz-card">
+            <div class="player-viz-card-head">
+              <h4>Recent Matches</h4>
+            </div>
+            ${recentRows.length ? `
+              <div class="dota-recent-matches">
+                <div class="dota-recent-match head">
+                  <span>Match</span><span>Result</span><span>K / D / A</span><span>GPM</span><span>XPM</span><span>Dur</span>
+                </div>
+                ${recentRows.slice(0, 8).map((match) => {
+                  const won = ((match.player_slot || 0) < 128 && match.radiant_win) || ((match.player_slot || 0) >= 128 && !match.radiant_win);
+                  return `
+                    <div class="dota-recent-match">
+                      <span>#${match.match_id}</span>
+                      <span class="${won ? "delta-up" : "delta-down"}">${won ? "Win" : "Loss"}</span>
+                      <span>${match.kills} / ${match.deaths} / ${match.assists}</span>
+                      <span>${match.gold_per_min ?? "-"}</span>
+                      <span>${match.xp_per_min ?? "-"}</span>
+                      <span>${formatDuration(match.duration)}</span>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            ` : `<p class="inline-player-note">No recent OpenDota matches were returned for this player.</p>`}
+            <div class="player-dash-links">
+              ${player.hltvUrl ? `<a class="hltv-link" href="${player.hltvUrl}" target="_blank" rel="noopener">Open OpenDota profile</a>` : ""}
+              ${player.liquipediaTitle ? `<a class="hltv-link" href="https://liquipedia.net/dota2/${encodeURIComponent(player.liquipediaTitle.replaceAll(" ", "_"))}" target="_blank" rel="noopener">Open Liquipedia page</a>` : ""}
+            </div>
+          </section>
+        </div>
+      </section>
+    `;
+
+    bindFlagFallback(host);
+    host.querySelectorAll(".player-dash-avatar").forEach((img) => {
+      img.addEventListener("error", () => {
+        if (img.dataset.fallback) img.src = img.dataset.fallback;
+      });
+    });
+    host.querySelector("#inlinePlayerClose")?.addEventListener("click", () => {
+      selectedInlinePlayerId = null;
+      host.innerHTML = "";
+      dotaPlayerDashboardSection.classList.add("hidden");
+      detailContent.querySelectorAll(".dota-player-card").forEach((card) => card.classList.remove("active"));
+    });
+  }
+
+  function renderDotaCountryPlayerGallery() {
+    const listEl = detailContent?.querySelector("#countryPlayerList");
+    if (!listEl || !selectedCountryProfile) return;
+
+    const filtered = filteredCountryPlayers();
+    if (!filtered.length) {
+      listEl.innerHTML = `<p class="player-list-empty">No players match this filter.</p>`;
+      clearDotaPlayerDashboard();
+      return;
+    }
+
+    const grouped = d3.group(filtered, (p) => getPrimaryTeam(p));
+    const sections = Array.from(grouped, ([teamName, teamPlayers]) => ({
+      teamName,
+      players: teamPlayers,
+    })).sort((a, b) => d3.descending(a.players.length, b.players.length) || d3.ascending(a.teamName, b.teamName));
+
+    listEl.innerHTML = `
+      <div class="country-player-scroll">
+        <div class="dota-team-gallery">
+          ${sections
+          .map((section) => `
+            <section class="dota-team-block">
+              <div class="dota-team-block-head">
+                <h4>${esc(section.teamName)}</h4>
+                <span>${section.players.length} player${section.players.length > 1 ? "s" : ""}</span>
+              </div>
+              <div class="dota-player-grid">
+                ${section.players
+                  .map((p) => `
+                    <button class="dota-player-card ${selectedInlinePlayerId === p.id ? "active" : ""}" type="button" data-player-id="${p.id}">
+                      <img class="dota-player-photo" src="${p.avatar}" data-fallback="${p.avatarFallback}" alt="${esc(p.name)} photo">
+                      <span class="dota-player-name">${esc(p.name)}</span>
+                      <span class="dota-player-meta">WR ${dotaWinRate(p).toFixed(0)}% | ${p.matchCount} matches</span>
+                    </button>
+                  `)
+                  .join("")}
+              </div>
+            </section>
+          `)
+          .join("")}
+        </div>
+      </div>
+    `;
+
+    listEl.querySelectorAll(".dota-player-photo").forEach((img) => {
+      img.addEventListener("error", () => {
+        if (img.dataset.fallback) img.src = img.dataset.fallback;
+      });
+    });
+
+    listEl.querySelectorAll(".dota-player-card").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const playerId = btn.dataset.playerId;
+        const nextPlayerId = selectedInlinePlayerId === playerId ? null : playerId;
+        selectedInlinePlayerId = nextPlayerId;
+        listEl.querySelectorAll(".dota-player-card").forEach((card) => {
+          card.classList.toggle("active", card.dataset.playerId === nextPlayerId);
+        });
+        if (nextPlayerId) {
+          renderDotaInlinePlayerDashboard(nextPlayerId);
+          dotaPlayerDashboardSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          clearDotaPlayerDashboard();
+        }
+      });
+    });
+
+    if (selectedInlinePlayerId && filtered.some((p) => p.id === selectedInlinePlayerId)) {
+      renderDotaInlinePlayerDashboard(selectedInlinePlayerId);
+    } else if (!selectedInlinePlayerId) {
+      clearDotaPlayerDashboard();
+    }
+  }
+
   /**
    * Country-side list with filter + sort + pagination (5 rows/page).
    * Keeping this in a dedicated renderer avoids DOM bloat when countries have many players.
@@ -817,20 +1353,12 @@
   function renderCountryPlayerList() {
     const listEl = detailContent?.querySelector("#countryPlayerList");
     if (!listEl || !selectedCountryProfile) return;
+    if (currentGame === "dota2") {
+      renderDotaCountryPlayerGallery();
+      return;
+    }
 
-    const query = detailPlayerQuery.trim().toLowerCase();
-    const sorted = sortPlayers(selectedCountryProfile.players, detailPlayerSort);
-    const filtered = sorted.filter((p) => {
-      const matchesQuery =
-        !query ||
-        p.name.toLowerCase().includes(query) ||
-        p.teams.some((t) => t.toLowerCase().includes(query));
-      const primaryTeam = p.teams && p.teams.length ? p.teams[0] : "Unaffiliated";
-      const matchesTeam =
-        !detailTeamFilter ||
-        primaryTeam.toLowerCase() === detailTeamFilter.toLowerCase();
-      return matchesQuery && matchesTeam;
-    });
+    const filtered = filteredCountryPlayers();
 
     if (!filtered.length) {
       listEl.innerHTML = `<p class="player-list-empty">No players match this filter.</p>`;
@@ -848,15 +1376,14 @@
         ${shown
           .map(
             (p) => {
-              const metaTail = p.hltvCurrentTeam?.name ? `HLTV: ${p.hltvCurrentTeam.name}` : `${p.teamCount} teams`;
               return `
                 <button class="player-row-btn" data-player-id="${p.id}">
                   <img class="player-avatar-sm" src="${p.avatar}" data-fallback="${p.avatarFallback}" alt="${esc(p.name)} avatar">
                   <span class="player-row-main">
                     <span class="player-row-name">${esc(p.name)}</span>
-                    <span class="player-row-meta">K/D ${p.kd.toFixed(2)} | ${esc(metaTail)}</span>
+                    <span class="player-row-meta">${currentGame === "dota2" ? `Presence ${Math.round(p.rating)} | ${esc(playerListMeta(p))}` : `K/D ${p.kd.toFixed(2)} | ${esc(playerListMeta(p))}`}</span>
                   </span>
-                  <span class="player-row-score">R ${p.rating.toFixed(2)}</span>
+                  <span class="player-row-score">${playerListScore(p)}</span>
                 </button>
               `;
             }
@@ -892,69 +1419,86 @@
   }
 
   function renderCountryPanel(mapCountry) {
-    if (currentGame !== "cs") {
-      const m = mockMetrics(mapCountry, currentGame);
-      const accent = currentGame === "cs" ? "#3b82f6" : "#8b5cf6";
-      detailTitle.textContent = `${flagEmoji(mapCountry)} ${mapCountry}`;
-      detailContent.innerHTML = `
-        <p><strong>Game:</strong> ${currentGame === "cs" ? "Counter-Strike" : "DOTA 2"}</p>
-        <div class="kpi-grid">
-          <div class="kpi-card"><span class="kpi-label">Tournaments</span><span class="kpi-value">${m.tournaments}</span></div>
-          <div class="kpi-card"><span class="kpi-label">Teams</span><span class="kpi-value">${m.teams}</span></div>
-          <div class="kpi-card"><span class="kpi-label">Player Pool</span><span class="kpi-value">${m.players}</span></div>
-          <div class="kpi-card"><span class="kpi-label">Win Rate</span><span class="kpi-value">${m.winRate}%</span></div>
-        </div>
-        <div class="sparkline-wrap"><div class="sparkline-title">Recent trend</div>${renderSparkline(m.series, accent)}</div>
-      `;
-      return;
-    }
-
+    if (currentGame !== "dota2") clearDotaPlayerDashboard();
     const canonical = resolveCountryForMap(mapCountry);
     const profile = canonical ? countryData.get(canonical) : null;
     selectedCountryProfile = profile || null;
 
     if (!profile) {
+      clearDotaPlayerDashboard();
       detailTitle.textContent = `${flagEmoji(mapCountry)} ${mapCountry}`;
-      detailContent.innerHTML = `<div class="empty-state"><p class="detail-placeholder">No player_stats entries found for this country.</p></div>`;
+      detailContent.innerHTML = `<div class="empty-state"><p class="detail-placeholder">${currentGame === "cs" ? "No player_stats entries found for this country." : "No Dota 2 player records found for this country."}</p></div>`;
       return;
     }
 
     const flag = flagImg(profile.country);
     const trend = profile.players.slice(0, 12).map((p) => p.rating);
     detailTitle.textContent = `${flagEmoji(profile.country)} ${profile.country}`;
-    detailContent.innerHTML = `
-      <div class="country-headline">
-        ${flag ? `<img class="country-flag flag-image" src="${flag}" alt="${esc(profile.country)} flag">` : ""}
-        <div class="country-headline-text">
-          <div class="country-headline-name">${esc(flagEmoji(profile.country))} ${esc(profile.country)}</div>
-          <div class="country-headline-sub">${profile.playerCount} players from ${esc(profile.country)}</div>
+    const panelHtml = currentGame === "cs"
+      ? `
+        <div class="country-headline">
+          ${flag ? `<img class="country-flag flag-image" src="${flag}" alt="${esc(profile.country)} flag">` : ""}
+          <div class="country-headline-text">
+            <div class="country-headline-name">${esc(flagEmoji(profile.country))} ${esc(profile.country)}</div>
+            <div class="country-headline-sub">${profile.playerCount} players from ${esc(profile.country)}</div>
+          </div>
         </div>
-      </div>
 
-      <div class="kpi-grid">
-        <div class="kpi-card"><span class="kpi-label">Avg Rating</span><span class="kpi-value">${profile.avgRating.toFixed(2)}</span></div>
-        <div class="kpi-card"><span class="kpi-label">Avg K/D</span><span class="kpi-value">${profile.avgKD.toFixed(2)}</span></div>
-        <div class="kpi-card"><span class="kpi-label">Unique Teams</span><span class="kpi-value">${profile.teamCount}</span></div>
-        <div class="kpi-card"><span class="kpi-label">Avg Rounds / Player</span><span class="kpi-value">${d3.format(",.0f")(profile.totalRounds / Math.max(profile.playerCount, 1))}</span></div>
-      </div>
-
-      <div class="sparkline-wrap">
-        <div class="sparkline-title">Top-player rating trend</div>
-        ${renderSparkline(trend, "#3b82f6")}
-      </div>
-
-      <div class="country-player-controls">
-        <input id="countryPlayerSearch" class="country-player-search" type="search" placeholder="Search players or teams">
-        <div class="player-sort-group">
-          <button class="player-sort-btn ${detailPlayerSort === "rating" ? "active" : ""}" data-sort="rating">Rating</button>
-          <button class="player-sort-btn ${detailPlayerSort === "kd" ? "active" : ""}" data-sort="kd">K/D</button>
-          <button class="player-sort-btn ${detailPlayerSort === "maps" ? "active" : ""}" data-sort="maps">Maps</button>
-          <button class="player-sort-btn ${detailPlayerSort === "name" ? "active" : ""}" data-sort="name">Name</button>
+        <div class="kpi-grid">
+          <div class="kpi-card"><span class="kpi-label">Avg Rating</span><span class="kpi-value">${profile.avgRating.toFixed(2)}</span></div>
+          <div class="kpi-card"><span class="kpi-label">Avg K/D</span><span class="kpi-value">${profile.avgKD.toFixed(2)}</span></div>
+          <div class="kpi-card"><span class="kpi-label">Unique Teams</span><span class="kpi-value">${profile.teamCount}</span></div>
+          <div class="kpi-card"><span class="kpi-label">Avg Rounds / Player</span><span class="kpi-value">${d3.format(",.0f")(profile.totalRounds / Math.max(profile.playerCount, 1))}</span></div>
         </div>
-      </div>
 
-      <div id="countryPlayerList"></div>
-    `;
+        <div class="sparkline-wrap">
+          <div class="sparkline-title">Top-player rating trend</div>
+          ${renderSparkline(trend, "#3b82f6")}
+        </div>
+
+        <div class="country-player-controls">
+          <input id="countryPlayerSearch" class="country-player-search" type="search" placeholder="Search players or teams">
+          <div class="player-sort-group">
+            <button class="player-sort-btn ${detailPlayerSort === "rating" ? "active" : ""}" data-sort="rating">Rating</button>
+            <button class="player-sort-btn ${detailPlayerSort === "kd" ? "active" : ""}" data-sort="kd">K/D</button>
+            <button class="player-sort-btn ${detailPlayerSort === "maps" ? "active" : ""}" data-sort="maps">Maps</button>
+            <button class="player-sort-btn ${detailPlayerSort === "name" ? "active" : ""}" data-sort="name">Name</button>
+          </div>
+        </div>
+      `
+      : `
+        <div class="country-headline">
+          ${flag ? `<img class="country-flag flag-image" src="${flag}" alt="${esc(profile.country)} flag">` : ""}
+          <div class="country-headline-text">
+            <div class="country-headline-name">${esc(flagEmoji(profile.country))} ${esc(profile.country)}</div>
+            <div class="country-headline-sub">${profile.playerCount} Dota 2 players linked to ${esc(profile.country)}</div>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card"><span class="kpi-label">Player Pool</span><span class="kpi-value">${d3.format(",.0f")(profile.playerCount)}</span></div>
+          <div class="kpi-card"><span class="kpi-label">Avg Win Rate</span><span class="kpi-value">${profile.avgWinRate.toFixed(1)}%</span></div>
+          <div class="kpi-card"><span class="kpi-label">Avg K / D / A</span><span class="kpi-value">${profile.avgKills.toFixed(1)} / ${profile.avgDeaths.toFixed(1)} / ${profile.avgAssists.toFixed(1)}</span></div>
+          <div class="kpi-card"><span class="kpi-label">Avg GPM / XPM</span><span class="kpi-value">${profile.avgGpm.toFixed(0)} / ${profile.avgXpm.toFixed(0)}</span></div>
+        </div>
+
+        <div class="sparkline-wrap">
+          <div class="sparkline-title">Top-player win-rate trend</div>
+          ${renderSparkline(trend, "#8b5cf6")}
+        </div>
+
+        <div class="country-player-controls">
+          <input id="countryPlayerSearch" class="country-player-search" type="search" placeholder="Search players or teams">
+          <div class="player-sort-group">
+            <button class="player-sort-btn ${detailPlayerSort === "rating" ? "active" : ""}" data-sort="rating">Win Rate</button>
+            <button class="player-sort-btn ${detailPlayerSort === "kd" ? "active" : ""}" data-sort="kd">KDA</button>
+            <button class="player-sort-btn ${detailPlayerSort === "maps" ? "active" : ""}" data-sort="maps">Matches</button>
+            <button class="player-sort-btn ${detailPlayerSort === "name" ? "active" : ""}" data-sort="name">Name</button>
+          </div>
+        </div>
+      `;
+
+    detailContent.innerHTML = `${panelHtml}<div id="countryPlayerList"></div>`;
 
     bindFlagFallback(detailContent);
 
@@ -987,17 +1531,11 @@
       section.innerHTML = `
         <div class="team-section-title">Club presence among ${esc(profile.country)} players</div>
         <div class="team-list">
-          ${top
-            .map(
-              (t) => `
+          ${top.map((t) => `
                 <button class="team-list-item" type="button" data-team="${esc(t.name)}">
-                  ${esc(t.name)} &middot; ${t.playerCount} player${
-                t.playerCount > 1 ? "s" : ""
-              } &mdash; R ${t.avgRating.toFixed(2)}
+                  ${esc(t.name)} &middot; ${t.playerCount} player${t.playerCount > 1 ? "s" : ""}${currentGame === "cs" ? ` &mdash; R ${t.avgRating.toFixed(2)}` : ""}
                 </button>
-              `
-            )
-            .join("")}
+              `).join("")}
         </div>
       `;
 
@@ -1076,9 +1614,11 @@
       .attr("fill", (f) => countryFill(f))
       .attr("stroke", (f) => (f === selectedCountry ? colors.active : colors.stroke))
       .attr("stroke-width", (f) => (f === selectedCountry ? 1.6 : 0.5))
+      .style("opacity", (f) => countryOpacity(f))
       .style("filter", (f) => (f === selectedCountry ? `drop-shadow(0 0 10px ${colors.glow})` : "none"));
     applySelectionPulse();
     svg.selectAll("text.country-label").classed("selected", (f) => f === selectedCountry);
+    updateCountryLabels();
   }
 
   function highlightClubOnMap(teamName) {
@@ -1130,9 +1670,12 @@
         : "CS2 | No player_stats data";
       hideQuickMenu();
     } else {
-      const m = mockMetrics(name, currentGame);
-      tooltipTitle.textContent = `${flagEmoji(name)} ${name}`;
-      tooltipSub.textContent = `${currentGame.toUpperCase()} | Win rate ${m.winRate}% | Teams ${m.teams}`;
+      const profile = countryProfileByFeature(feature);
+      const display = profile?.country || name;
+      tooltipTitle.textContent = `${flagEmoji(display)} ${display}`;
+      tooltipSub.textContent = profile
+        ? `DOTA 2 | Players ${profile.playerCount} | Avg WR ${profile.avgWinRate.toFixed(1)}%`
+        : "DOTA 2 | No local country data";
       hideQuickMenu();
     }
 
@@ -1146,6 +1689,7 @@
       .attr("fill", colors.hover)
       .attr("stroke", colors.active)
       .attr("stroke-width", 1.1)
+      .style("opacity", 1)
       .style("filter", `drop-shadow(0 0 8px ${colors.glow})`);
   }
 
@@ -1162,6 +1706,7 @@
       .attr("fill", countryFill(f))
       .attr("stroke", selected ? colors.active : colors.stroke)
       .attr("stroke-width", selected ? 1.6 : 0.5)
+      .style("opacity", countryOpacity(f))
       .style("filter", selected ? `drop-shadow(0 0 10px ${colors.glow})` : "none");
   }
 
@@ -1170,6 +1715,8 @@
     const name = mapCountryName(feature);
     selectedCountry = feature;
     selectedCountryName = name;
+    selectedInlinePlayerId = null;
+    clearDotaPlayerDashboard();
     detailPlayerSort = "rating";
     detailPlayerQuery = "";
     detailPlayerPage = 1;
@@ -1405,6 +1952,88 @@
     `;
   }
 
+  function renderDotaPlayerModal(player) {
+    if (!playerModalContent) return;
+    const displayCountry = player.country;
+    const flag = flagImg(displayCountry);
+    const recentRows = player.recentMatches || [];
+
+    playerModalContent.innerHTML = `
+      <div class="player-dash-header">
+        <img class="player-dash-avatar" src="${player.avatar}" data-fallback="${player.avatarFallback}" alt="${esc(player.name)} avatar">
+        <div class="player-dash-identity">
+          <h3 id="playerDashTitle">${esc(player.name)}</h3>
+          <div class="player-dash-country">${flag ? `<img class="flag-image player-flag" src="${flag}" alt="${esc(displayCountry)} flag">` : ""}<span>${esc(flagEmoji(displayCountry))} ${esc(displayCountry)}</span></div>
+          <div class="player-current-team">Known teams: ${player.teams.length ? esc(player.teams.slice(0, 6).join(", ")) : "N/A"}</div>
+        </div>
+        <div class="player-rating-pill">WR ${dotaWinRate(player).toFixed(1)}%</div>
+      </div>
+
+      <div class="player-dash-kpis">
+        <div class="player-kpi-card"><span class="player-kpi-label">Matches</span><span class="player-kpi-value">${player.matchCount}</span></div>
+        <div class="player-kpi-card"><span class="player-kpi-label">K / D / A</span><span class="player-kpi-value">${dotaKdaLabel(player)}</span></div>
+        <div class="player-kpi-card"><span class="player-kpi-label">GPM</span><span class="player-kpi-value">${player.avgGpm.toFixed(0)}</span></div>
+        <div class="player-kpi-card"><span class="player-kpi-label">XPM</span><span class="player-kpi-value">${player.avgXpm.toFixed(0)}</span></div>
+      </div>
+
+      <div class="player-viz-grid">
+        <section class="player-viz-card">
+          <div class="player-viz-card-head">
+            <h4>Recent Match Summary</h4>
+          </div>
+          <div id="playerMiniBars" class="player-mini-bars">
+            <div class="player-mini-bar-row">
+              <div class="player-mini-bar-head"><span>Average kills</span><span class="player-mini-bar-values"><span class="player-mini-bar-player">${player.avgKills.toFixed(1)}</span></span></div>
+              <div class="player-mini-bar-track"><div class="player-mini-bar-fill" style="width:${Math.min(100, player.avgKills * 5)}%"></div></div>
+            </div>
+            <div class="player-mini-bar-row">
+              <div class="player-mini-bar-head"><span>Average deaths</span><span class="player-mini-bar-values"><span class="player-mini-bar-player">${player.avgDeaths.toFixed(1)}</span></span></div>
+              <div class="player-mini-bar-track"><div class="player-mini-bar-fill" style="width:${Math.min(100, player.avgDeaths * 7)}%"></div></div>
+            </div>
+            <div class="player-mini-bar-row">
+              <div class="player-mini-bar-head"><span>Average assists</span><span class="player-mini-bar-values"><span class="player-mini-bar-player">${player.avgAssists.toFixed(1)}</span></span></div>
+              <div class="player-mini-bar-track"><div class="player-mini-bar-fill" style="width:${Math.min(100, player.avgAssists * 3.5)}%"></div></div>
+            </div>
+          </div>
+          <div id="playerModeSummary" class="player-country-summary">This panel is built from <code>current_player_match_data.json</code>.</div>
+        </section>
+
+        <section class="player-viz-card">
+          <div class="player-viz-card-head">
+            <h4>Recent Matches</h4>
+          </div>
+          ${recentRows.length ? `
+            <div class="dota-recent-matches">
+              <div class="dota-recent-match head">
+                <span>Match</span><span>Result</span><span>K / D / A</span><span>GPM</span><span>XPM</span><span>Dur</span>
+              </div>
+              ${recentRows.slice(0, 8).map((match) => {
+                const won = ((match.player_slot || 0) < 128 && match.radiant_win) || ((match.player_slot || 0) >= 128 && !match.radiant_win);
+                return `
+                  <div class="dota-recent-match">
+                    <span>#${match.match_id}</span>
+                    <span class="${won ? "delta-up" : "delta-down"}">${won ? "Win" : "Loss"}</span>
+                    <span>${match.kills} / ${match.deaths} / ${match.assists}</span>
+                    <span>${match.gold_per_min ?? "-"}</span>
+                    <span>${match.xp_per_min ?? "-"}</span>
+                    <span>${formatDuration(match.duration)}</span>
+                  </div>
+                `;
+              }).join("")}
+            </div>
+          ` : "<span>No recent matches available.</span>"}
+        </section>
+      </div>
+    `;
+
+    bindFlagFallback(playerModalContent);
+    playerModalContent.querySelectorAll(".player-dash-avatar").forEach((img) => {
+      img.addEventListener("error", () => {
+        if (img.dataset.fallback) img.src = img.dataset.fallback;
+      });
+    });
+  }
+
   function renderHLTVSnapshot(player) {
     const hStats = player.hltvStats || {};
     const currentTeam = player.hltvCurrentTeam?.name || "N/A";
@@ -1550,7 +2179,11 @@
     const player = playerById.get(playerId);
     if (!player) return;
     radarMode = "global";
-    renderPlayerModal(player);
+    if (currentGame === "dota2") {
+      renderDotaPlayerModal(player);
+    } else {
+      renderPlayerModal(player);
+    }
     playerModal.classList.add("open");
     playerModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("player-dashboard-open");
@@ -1573,7 +2206,7 @@
       .attr("class", "country-label")
       .attr("x", (f) => geoPath.centroid(f)[0])
       .attr("y", (f) => geoPath.centroid(f)[1])
-       .style("font-size", (f) => `${clamp(Math.sqrt(geoPath.area(f)) / 16, 5.5, 14)}px`)
+      .style("font-size", (f) => `${clamp(Math.sqrt(geoPath.area(f)) / 16, 5.5, 14)}px`)
       .style("opacity", 0.82)
       .text((f) => mapCountryName(f));
   }
@@ -1584,7 +2217,7 @@
       .selectAll("text.country-label")
       .attr("x", (f) => geoPath.centroid(f)[0])
       .attr("y", (f) => geoPath.centroid(f)[1])
-       .style("font-size", (f) => `${clamp(Math.sqrt(geoPath.area(f)) / 16, 5.5, 14)}px`)
+      .style("font-size", (f) => `${clamp(Math.sqrt(geoPath.area(f)) / 16, 5.5, 14)}px`)
       .style("opacity", 0.82)
       .classed("selected", (f) => f === selectedCountry);
   }
@@ -1615,6 +2248,7 @@
       .attr("fill", (f) => countryFill(f))
       .attr("stroke", colors.stroke)
       .attr("stroke-width", 0.5)
+      .style("opacity", (f) => countryOpacity(f))
       .style("cursor", "pointer")
       .on("mouseover", (e, f) => onCountryHover(e, f))
       .on("mouseout", onCountryOut)
@@ -1671,6 +2305,11 @@
         const game = btn.dataset.game;
         if (!game || game === currentGame) return;
         currentGame = game;
+        if (game !== "dota2") {
+          selectedInlinePlayerId = null;
+          clearDotaPlayerDashboard();
+        }
+        setActiveData(game);
         document.querySelectorAll(".game-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         if (gameLabel) gameLabel.textContent = game === "cs" ? "Counter-Strike" : "DOTA 2";
@@ -1828,10 +2467,12 @@
     renderAchievements();
 
     try {
-      await loadPlayers();
+      await loadCSPlayers();
+      await loadDotaPlayers();
+      setActiveData(currentGame);
       renderDrawer();
     } catch (error) {
-      console.error("Failed to load player_stats.csv:", error);
+      console.error("Failed to load local player datasets:", error);
     }
 
     try {

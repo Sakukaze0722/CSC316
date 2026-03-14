@@ -1,0 +1,517 @@
+/* ============================================
+   Eco Board — Team Economic Info
+   ============================================ */
+
+.eco-board-page {
+  padding-bottom: 2rem;
+}
+
+/* Round nav */
+.eco-round-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.eco-round-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.eco-round-label {
+  color: var(--dbg-panel-text);
+  font-size: 0.95rem;
+}
+.eco-round-input {
+  width: 4rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 1rem;
+  text-align: center;
+  background: var(--dbg-toggle-bg);
+  border: 1px solid var(--dbg-toggle-border);
+  border-radius: 6px;
+  color: var(--dbg-btn-hover);
+}
+.eco-nav-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  background: var(--dbg-game-bg);
+  border: 1px solid var(--dbg-game-border);
+  border-radius: 8px;
+  color: var(--dbg-btn-color);
+  cursor: pointer;
+}
+.eco-nav-btn:hover {
+  color: var(--dbg-btn-hover);
+  border-color: var(--dbg-btn-hover);
+}
+
+/* Side select */
+.eco-side-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.eco-side-select label {
+  color: var(--dbg-panel-text);
+  font-size: 0.9rem;
+}
+.eco-side-btns {
+  display: flex;
+  gap: 0.25rem;
+}
+.eco-side-btn {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: var(--dbg-game-bg);
+  border: 1px solid var(--dbg-game-border);
+  border-radius: 6px;
+  color: var(--dbg-btn-color);
+  cursor: pointer;
+}
+.eco-side-btn:hover {
+  color: var(--dbg-btn-hover);
+}
+.eco-side-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+/* Players grid — one row of five, like sketch */
+.eco-players-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+  margin: 0 auto 1.5rem;
+  padding: 0 0.5rem;
+  max-width: 100%;
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  .eco-players-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+}
+.eco-player-card {
+  background: var(--dbg-panel-bg);
+  border: 1px solid var(--dbg-panel-border);
+  border-radius: 10px;
+  padding: 0.6rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.eco-player-card h4 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--dbg-panel-title);
+  background: var(--dbg-panel-title);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+}
+.eco-player-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--dbg-toggle-bg);
+  border: 1px solid var(--dbg-toggle-border);
+  flex-shrink: 0;
+  margin: 0 auto;
+}
+.eco-player-money {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #86efac;
+  text-align: center;
+}
+.eco-player-money input {
+  width: 100%;
+  max-width: 4.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.2rem 0.35rem;
+  background: var(--dbg-toggle-bg);
+  border: 1px solid var(--dbg-toggle-border);
+  border-radius: 6px;
+  color: #86efac;
+  margin: 0 auto;
+  display: block;
+  box-sizing: border-box;
+}
+.eco-player-equip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.eco-player-equip label {
+  font-size: 0.65rem;
+  color: var(--dbg-panel-placeholder);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.eco-player-equip select {
+  padding: 0.2rem 0.35rem;
+  font-size: 0.7rem;
+  background: var(--dbg-toggle-bg);
+  border: 1px solid var(--dbg-toggle-border);
+  border-radius: 4px;
+  color: var(--dbg-panel-text);
+  cursor: pointer;
+}
+
+.eco-main-weapon-img {
+  margin-top: 0.35rem;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.eco-main-weapon-img-empty {
+  min-height: 0;
+  display: none;
+}
+.eco-main-weapon-img img {
+  max-width: 100%;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+/* Bottom section: 3 columns per design — outcome | stats | strategy + recommend */
+.eco-bottom-section {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .eco-bottom-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+.eco-outcome-block,
+.eco-stats-block,
+.eco-strategy-block {
+  background: var(--dbg-panel-bg);
+  border: 1px solid var(--dbg-panel-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+.eco-outcome-block h3,
+.eco-stats-block h3,
+.eco-strategy-block h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--dbg-panel-title);
+  background: var(--dbg-panel-title);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.eco-outcome-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.eco-outcome-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: var(--dbg-game-bg);
+  border: 1px solid var(--dbg-game-border);
+  border-radius: 8px;
+  color: var(--dbg-btn-color);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.eco-outcome-btn:hover {
+  color: var(--dbg-btn-hover);
+  border-color: var(--dbg-btn-hover);
+}
+
+/* Win/Loss flash + ripple (Kill Vector Field–style impact feedback) */
+.eco-outcome-block { position: relative; overflow: hidden; }
+.eco-outcome-btn { position: relative; z-index: 1; transition: transform 0.2s ease, box-shadow 0.3s ease; }
+.eco-outcome-btn:active { transform: scale(0.98); }
+.eco-outcome-btn.flash-win {
+  animation: eco-flash-win 0.6s ease-out;
+}
+.eco-outcome-btn.flash-loss {
+  animation: eco-flash-loss 0.6s ease-out;
+}
+@keyframes eco-flash-win {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+  40% { box-shadow: 0 0 20px 8px rgba(34, 197, 94, 0.4); }
+  100% { box-shadow: none; }
+}
+@keyframes eco-flash-loss {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  40% { box-shadow: 0 0 20px 8px rgba(239, 68, 68, 0.35); }
+  100% { box-shadow: none; }
+}
+.eco-outcome-ripple {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: eco-ripple 0.8s ease-out forwards;
+}
+@keyframes eco-ripple {
+  0% { transform: scale(0); opacity: 0.7; }
+  100% { transform: scale(4); opacity: 0; }
+}
+.eco-outcome-ripple.ripple-win { background: radial-gradient(circle, rgba(34, 197, 94, 0.4) 0%, transparent 70%); }
+.eco-outcome-ripple.ripple-loss { background: radial-gradient(circle, rgba(239, 68, 68, 0.35) 0%, transparent 70%); }
+
+.eco-summary-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  color: var(--dbg-panel-text);
+}
+.eco-summary-list li {
+  margin-bottom: 0.35rem;
+}
+.eco-summary-list li strong.eco-pulse {
+  animation: eco-number-pulse 0.5s ease-out;
+}
+@keyframes eco-number-pulse {
+  0% { text-shadow: 0 0 12px currentColor; opacity: 1; }
+  50% { text-shadow: 0 0 20px currentColor; opacity: 0.9; }
+  100% { text-shadow: none; opacity: 1; }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+.eco-strategy-btns {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.eco-strategy-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--dbg-game-bg);
+  border: 1px solid var(--dbg-game-border);
+  border-radius: 8px;
+  color: var(--dbg-btn-color);
+  cursor: pointer;
+}
+.eco-strategy-btn:hover {
+  color: var(--dbg-btn-hover);
+  border-color: var(--dbg-btn-hover);
+}
+.eco-strategy-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+.eco-strategy-block .eco-strategy-btns {
+  margin-bottom: 1rem;
+}
+
+.eco-recommend-inline {
+  margin-top: 0.5rem;
+}
+.eco-recommend-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--dbg-panel-text);
+  margin-bottom: 0.35rem;
+}
+.eco-recommend-content {
+  min-height: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+.eco-recommend-placeholder {
+  color: var(--dbg-panel-placeholder);
+  font-size: 0.9rem;
+  margin: 0;
+}
+.eco-recommend-items {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+.eco-recommend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  background: var(--dbg-toggle-bg);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--dbg-panel-text);
+  animation: eco-recommend-in 0.35s ease-out backwards;
+}
+.eco-recommend-item:nth-child(1) { animation-delay: 0.02s; }
+.eco-recommend-item:nth-child(2) { animation-delay: 0.06s; }
+.eco-recommend-item:nth-child(3) { animation-delay: 0.1s; }
+.eco-recommend-item:nth-child(4) { animation-delay: 0.14s; }
+.eco-recommend-item:nth-child(5) { animation-delay: 0.18s; }
+.eco-recommend-item:nth-child(6) { animation-delay: 0.22s; }
+.eco-recommend-item:nth-child(7) { animation-delay: 0.26s; }
+@keyframes eco-recommend-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.eco-recommend-total {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+.eco-recommend-total.eco-total-pop {
+  animation: eco-total-pop 0.4s ease-out;
+}
+@keyframes eco-total-pop {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.eco-recommend-equals {
+  font-weight: 700;
+  color: var(--dbg-panel-text);
+}
+.eco-recommend-total {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #86efac;
+}
+
+/* ============================================
+   Win rate prediction chart
+   ============================================ */
+.eco-prediction-card,
+.eco-prediction-section {
+  margin-top: 1rem;
+}
+.eco-prediction-section {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1.25rem;
+  background: var(--dbg-panel-bg);
+  border: 1px solid var(--dbg-panel-border);
+  border-radius: 12px;
+  margin-top: 1.5rem;
+}
+.eco-prediction-section h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--dbg-panel-title);
+}
+.eco-prediction-desc {
+  font-size: 0.8rem;
+  color: var(--dbg-panel-text);
+  margin: 0 0 0.75rem;
+  line-height: 1.35;
+}
+.eco-prediction-chart {
+  width: 100%;
+  min-width: 240px;
+  min-height: 180px;
+  margin-bottom: 0.5rem;
+}
+.eco-prediction-empty {
+  font-size: 0.85rem;
+  color: var(--dbg-panel-text);
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+}
+.eco-prediction-empty strong {
+  color: #86efac;
+}
+.eco-prediction-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--dbg-panel-text);
+}
+.eco-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.eco-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.eco-legend-dot-solid {
+  background: #58a6ff;
+}
+.eco-legend-dot-hollow {
+  background: transparent;
+  border: 2px solid #f472b6;
+  box-sizing: border-box;
+}
+.eco-chart-axis line,
+.eco-chart-axis path {
+  stroke: var(--dbg-panel-border);
+}
+.eco-chart-axis text {
+  fill: var(--dbg-panel-text);
+  font-size: 10px;
+}
+.eco-chart-line-actual {
+  fill: none;
+  stroke: #58a6ff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: eco-chart-draw 0.85s ease-out forwards;
+}
+.eco-chart-line-pred {
+  fill: none;
+  stroke: #f472b6;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: eco-chart-draw 0.85s ease-out 0.15s forwards;
+}
+@keyframes eco-chart-draw {
+  to { stroke-dashoffset: 0; }
+}
+.eco-chart-pt-actual {
+  fill: #58a6ff;
+  stroke: rgba(255,255,255,0.4);
+  stroke-width: 1;
+}
+.eco-chart-pt-pred {
+  fill: transparent;
+  stroke: #f472b6;
+  stroke-width: 2;
+}

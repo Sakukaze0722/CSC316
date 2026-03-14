@@ -814,6 +814,53 @@ body {
   transition: color 0.4s;
 }
 
+/* Eco Board sub-section (same card layout as Kill Vector Field) */
+.eco-board-demo-section .vis-container { display: block; }
+.eco-board-wrapper {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: var(--vis-bg);
+  border: 1px solid var(--vis-border);
+  border-radius: 8px;
+  transition: background 0.4s, border-color 0.4s, box-shadow 0.5s ease;
+}
+.eco-board-wrapper.eco-glow-win {
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.15), inset 0 0 0 1px rgba(34, 197, 94, 0.1);
+}
+.eco-board-wrapper.eco-glow-loss {
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.12), inset 0 0 0 1px rgba(239, 68, 68, 0.08);
+}
+.eco-board-main {
+  flex: 1;
+  min-width: 560px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--vis-border-light);
+  background: var(--vis-bg-card);
+  transition: border-color 0.4s, background 0.4s;
+}
+.eco-board-main.eco-board-inline {
+  overflow: visible;
+  padding: 16px;
+}
+.eco-board-main .eco-board-iframe {
+  display: block;
+  width: 100%;
+  height: 720px;
+  min-height: 560px;
+  border: none;
+}
+.eco-board-demo-section .kv-sidebar { min-width: 220px; }
+.eco-board-open-link {
+  color: var(--vis-accent, #2563eb);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+}
+.eco-board-open-link:hover { text-decoration: underline; }
+
 /* ========================================
    Hotspot overlay canvas (vis3)
    ======================================== */

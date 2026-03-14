@@ -1,0 +1,248 @@
+/* ============================================
+   Eco Board — Team Economic Info
+   ============================================ */
+
+.eco-board-page {
+  padding-bottom: 2rem;
+}
+
+/* Round nav */
+.eco-round-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.eco-round-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.eco-round-label {
+  color: var(--dbg-panel-text);
+  font-size: 0.95rem;
+}
+.eco-round-input {
+  width: 4rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 1rem;
+  text-align: center;
+  background: var(--dbg-toggle-bg);
+  border: 1px solid var(--dbg-toggle-border);
+  border-radius: 6px;
+  color: var(--dbg-btn-hover);
+}
+.eco-nav-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  background: var(--dbg-game-bg);
+  border: 1px solid var(--dbg-game-border);
+  border-radius: 8px;
+  color: var(--dbg-btn-color);
+  cursor: pointer;
+}
+.eco-nav-btn:hover {
+  color: var(--dbg-btn-hover);
+  border-color: var(--dbg-btn-hover);
+}
+
+/* Side select */
+.eco-side-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.eco-side-select label {
+  color: var(--dbg-panel-text);
+  font-size: 0.9rem;
+}
+.eco-side-btns {
+  display: flex;
+  gap: 0.25rem;
+}
+.eco-side-btn {
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: var(--dbg-game-bg);
+  border: 1px solid var(--dbg-game-border);
+  border-radius: 6px;
+  color: var(--dbg-btn-color);
+  cursor: pointer;
+}
+.eco-side-btn:hover {
+  color: var(--dbg-btn-hover);
+}
+.eco-side-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+/* Players grid */
+.eco-players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+.eco-player-card {
+  background: var(--dbg-panel-bg);
+  border: 1px solid var(--dbg-panel-border);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.eco-player-card h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--dbg-panel-title);
+  background: var(--dbg-panel-title);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.eco-player-money {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #86efac;
+}
+.eco-player-money input {
+  width: 100%;
+  max-width: 6rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  background: var(--dbg-toggle-bg);
+  border: 1px solid var(--dbg-toggle-border);
+  border-radius: 6px;
+  color: #86efac;
+}
+.eco-player-equip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.eco-player-equip label {
+  font-size: 0.75rem;
+  color: var(--dbg-panel-placeholder);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.eco-player-equip select {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+  background: var(--dbg-toggle-bg);
+  border: 1px solid var(--dbg-toggle-border);
+  border-radius: 6px;
+  color: var(--dbg-panel-text);
+  cursor: pointer;
+}
+
+/* Bottom section: summary + strategy + recommendation */
+.eco-bottom-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+@media (max-width: 700px) {
+  .eco-bottom-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+.eco-summary-block,
+.eco-recommend-block {
+  background: var(--dbg-panel-bg);
+  border: 1px solid var(--dbg-panel-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+.eco-summary-block h3,
+.eco-recommend-block h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--dbg-panel-title);
+  background: var(--dbg-panel-title);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.eco-summary-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  font-size: 0.9rem;
+  color: var(--dbg-panel-text);
+}
+.eco-summary-list li {
+  margin-bottom: 0.35rem;
+}
+
+.eco-strategy-btns {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.eco-strategy-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--dbg-game-bg);
+  border: 1px solid var(--dbg-game-border);
+  border-radius: 8px;
+  color: var(--dbg-btn-color);
+  cursor: pointer;
+}
+.eco-strategy-btn:hover {
+  color: var(--dbg-btn-hover);
+  border-color: var(--dbg-btn-hover);
+}
+.eco-strategy-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+.eco-recommend-content {
+  min-height: 80px;
+}
+.eco-recommend-placeholder {
+  color: var(--dbg-panel-placeholder);
+  font-size: 0.9rem;
+  margin: 0;
+}
+.eco-recommend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  align-items: center;
+}
+.eco-recommend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--dbg-toggle-bg);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--dbg-panel-text);
+}
+.eco-recommend-total {
+  margin-top: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #86efac;
+}

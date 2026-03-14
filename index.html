@@ -6,6 +6,7 @@
   <title>CSC316 — Five Color Squad</title>
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/dashboard.css?v=4">
+  <link rel="stylesheet" href="css/eco_board.css?v=1">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
@@ -584,6 +585,73 @@
         </div>
       </div>
     </section>
+
+    <!-- Team Economic Info (Eco Board) sub-section -->
+    <div class="analysis-header">
+      <h2>Team Economic Info (Eco Board)</h2>
+      <p>Enter current team equipment and money, then choose Eco / Half Buy / Full Buy to get recommended loadouts. Based on CS2 economy and equipment rules.</p>
+    </div>
+    <section class="eco-board-demo-section">
+      <div class="vis-container">
+        <div class="eco-board-wrapper">
+          <div class="eco-board-main eco-board-inline">
+            <section class="eco-round-nav">
+              <button type="button" class="eco-nav-btn" id="btnLastRound" aria-label="Previous round">← Last Round</button>
+              <div class="eco-round-input-wrap">
+                <span class="eco-round-label">Round</span>
+                <input type="number" id="currentRound" class="eco-round-input" min="1" value="1" aria-label="Current round">
+              </div>
+              <button type="button" class="eco-nav-btn" id="btnNextRound" aria-label="Next round">Next Round →</button>
+            </section>
+            <section class="eco-side-select">
+              <label>Side</label>
+              <div class="eco-side-btns">
+                <button type="button" class="eco-side-btn active" data-side="T">T</button>
+                <button type="button" class="eco-side-btn" data-side="CT">CT</button>
+              </div>
+            </section>
+            <section class="eco-players-grid" id="playersGrid"></section>
+            <section class="eco-bottom-section">
+              <div class="eco-summary-block">
+                <h3>Team economy</h3>
+                <ul class="eco-summary-list">
+                  <li>Win +<span id="winBonus">3250</span></li>
+                  <li>Loss +<span id="lossBonus">1400</span> ~ <span id="lossBonusMax">3400</span></li>
+                  <li>Average Team Economy: <strong id="avgEconomy">0</strong></li>
+                  <li>Total Equipment Value: <strong id="totalEquipment">0</strong></li>
+                  <li>Next Round Average: <strong id="nextRoundAvg">0</strong></li>
+                </ul>
+                <div class="eco-strategy-btns">
+                  <button type="button" class="eco-strategy-btn" data-strategy="eco">Eco</button>
+                  <button type="button" class="eco-strategy-btn active" data-strategy="halfbuy">Half Buy</button>
+                  <button type="button" class="eco-strategy-btn" data-strategy="fullbuy">Full Buy</button>
+                </div>
+              </div>
+              <div class="eco-recommend-block">
+                <h3>Recommend combination:</h3>
+                <div class="eco-recommend-content" id="recommendContent">
+                  <p class="eco-recommend-placeholder">Choose a strategy to see recommended buy</p>
+                  <div class="eco-recommend-items" id="recommendItems"></div>
+                  <div class="eco-recommend-total" id="recommendTotal"></div>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div class="kv-sidebar">
+            <div class="kv-panel-card kv-info">
+              <h3>Reading the Eco Board</h3>
+              <p>
+                Enter each player’s <strong>money</strong> and current <strong>loadout</strong> (primary, pistol, armor, grenades), pick <strong>side</strong> (T/CT) and <strong>strategy</strong> (Eco / Half Buy / Full Buy). The recommendation area shows the suggested buy and total cost.
+              </p>
+            </div>
+            <div class="kv-panel-card">
+              <h3>Open full page</h3>
+              <a href="eco_board.html" target="_blank" rel="noopener" class="eco-board-open-link">Open Eco Board in new tab</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <!-- ============================================================
@@ -617,6 +685,7 @@
     <p>CSC316 — Five Color Squad</p>
   </footer>
 
+  <script src="js/eco_board.js"></script>
   <script src="js/main.js?v=4"></script>
   <script src="js/dashboard.js?v=4"></script>
 

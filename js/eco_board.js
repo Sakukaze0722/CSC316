@@ -131,10 +131,18 @@
     document.getElementById('winBonus').textContent = REWARDS.winBomb;
     document.getElementById('lossBonus').textContent = REWARDS.lossBonus[0];
     document.getElementById('lossBonusMax').textContent = REWARDS.lossBonus[4];
-    document.getElementById('avgEconomy').textContent = '$' + avg.toLocaleString();
-    document.getElementById('totalEquipment').textContent = '$' + totalEq.toLocaleString();
-    // next round avg (assuming loss): current money + loss bonus (fixed 1400 here; can extend with win/loss state)
-    document.getElementById('nextRoundAvg').textContent = '$' + (avg + lossBonus).toLocaleString();
+    function setWithPulse(id, text) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.classList.remove('eco-pulse');
+      void el.offsetWidth;
+      el.classList.add('eco-pulse');
+      setTimeout(function () { el.classList.remove('eco-pulse'); }, 550);
+    }
+    setWithPulse('avgEconomy', '$' + avg.toLocaleString());
+    setWithPulse('totalEquipment', '$' + totalEq.toLocaleString());
+    setWithPulse('nextRoundAvg', '$' + (avg + lossBonus).toLocaleString());
     if (document.getElementById('ecoWinRateChart')) renderPredictionChart();
   }
 
@@ -204,6 +212,10 @@
     if (totalEl) {
       totalEl.textContent = '$' + total.toLocaleString();
       totalEl.style.display = 'inline';
+      totalEl.classList.remove('eco-total-pop');
+      void totalEl.offsetWidth;
+      totalEl.classList.add('eco-total-pop');
+      setTimeout(function () { totalEl.classList.remove('eco-total-pop'); }, 450);
     }
   }
 
@@ -448,21 +460,30 @@
     svg.append('g')
       .attr('class', 'eco-chart-axis')
       .call(d3.axisLeft(y).ticks(5).tickFormat(d => (d * 100) + '%'));
+    function setPathDrawIn(pathSel) {
+      pathSel.each(function () {
+        const len = this.getTotalLength();
+        this.setAttribute('stroke-dasharray', len);
+        this.setAttribute('stroke-dashoffset', len);
+      });
+    }
     if (predictions.length > 0) {
       const linePred = d3.line()
         .x(d => x(d.round))
         .y(d => y(d.value));
       const predSorted = [...predictions].sort((a, b) => a.round - b.round);
-      svg.append('path')
+      const pathPred = svg.append('path')
         .datum(predSorted)
         .attr('class', 'eco-chart-line-pred')
         .attr('d', linePred);
+      setPathDrawIn(pathPred);
     }
     if (actuals.length > 0) {
-      svg.append('path')
+      const pathActual = svg.append('path')
         .datum(actuals.sort((a, b) => a.round - b.round))
         .attr('class', 'eco-chart-line-actual')
         .attr('d', lineActual);
+      setPathDrawIn(pathActual);
       svg.selectAll('.eco-chart-pt-actual')
         .data(actuals)
         .join('circle')
@@ -487,6 +508,20 @@
   function bindOutcomeButtons() {
     const btnWin = document.getElementById('btnSimulateWin');
     const btnLoss = document.getElementById('btnSimulateLoss');
+    const wrapper = document.querySelector('.eco-board-wrapper') || document.querySelector('.eco-board-main');
+    function addRipple(btn, win) {
+      const block = btn.closest('.eco-outcome-block');
+      if (!block) return;
+      const blockRect = block.getBoundingClientRect();
+      const rect = btn.getBoundingClientRect();
+      const cx = rect.left - blockRect.left + rect.width / 2;
+      const cy = rect.top - blockRect.top + rect.height / 2;
+      const ripple = document.createElement('div');
+      ripple.className = 'eco-outcome-ripple ' + (win ? 'ripple-win' : 'ripple-loss');
+      ripple.style.cssText = 'position:absolute;left:' + cx + 'px;top:' + cy + 'px;width:20px;height:20px;margin-left:-10px;margin-top:-10px;';
+      block.appendChild(ripple);
+      setTimeout(function () { ripple.remove(); }, 850);
+    }
     function recordAndUpdate(result, bonus) {
       const roundInput = document.getElementById('currentRound');
       const round = parseInt(roundInput?.value || '1', 10) || 1;
@@ -499,14 +534,33 @@
         if (input) input.value = (parseInt(input.value, 10) || 0) + bonus;
       }
       if (roundInput) roundInput.value = round + 1;
+      if (wrapper) {
+        wrapper.classList.remove('eco-glow-win', 'eco-glow-loss');
+        wrapper.classList.add(result === 'win' ? 'eco-glow-win' : 'eco-glow-loss');
+        setTimeout(function () { wrapper.classList.remove('eco-glow-win', 'eco-glow-loss'); }, 800);
+      }
       updateSummary();
       renderPredictionChart();
     }
     if (btnWin) {
-      btnWin.addEventListener('click', () => recordAndUpdate('win', REWARDS.winBomb));
+      btnWin.addEventListener('click', function () {
+        btnWin.classList.remove('flash-win');
+        void btnWin.offsetWidth;
+        btnWin.classList.add('flash-win');
+        addRipple(btnWin, true);
+        setTimeout(function () { btnWin.classList.remove('flash-win'); }, 650);
+        recordAndUpdate('win', REWARDS.winBomb);
+      });
     }
     if (btnLoss) {
-      btnLoss.addEventListener('click', () => recordAndUpdate('loss', REWARDS.lossBonus[0]));
+      btnLoss.addEventListener('click', function () {
+        btnLoss.classList.remove('flash-loss');
+        void btnLoss.offsetWidth;
+        btnLoss.classList.add('flash-loss');
+        addRipple(btnLoss, false);
+        setTimeout(function () { btnLoss.classList.remove('flash-loss'); }, 650);
+        recordAndUpdate('loss', REWARDS.lossBonus[0]);
+      });
     }
   }
 

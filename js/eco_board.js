@@ -33,6 +33,7 @@
     'MP9': 1250,
     'UMP-45': 1200,
     'MP7': 1500,
+    'MP5-SD': 1500,
     'PP-Bizon': 1400,
     'P90': 2350,
     // pistols
@@ -57,12 +58,26 @@
     'Incendiary': 600    // CT
   };
 
-  const MAIN_WEAPONS = ['None', 'AK-47', 'M4A4', 'M4A1-S', 'AWP', 'Galil AR', 'FAMAS', 'AUG', 'SG 553', 'SSG 08', 'MAC-10', 'MP9', 'UMP-45', 'MP7', 'PP-Bizon', 'P90'];
+  const MAIN_WEAPONS = ['None', 'AK-47', 'M4A4', 'M4A1-S', 'AWP', 'Galil AR', 'MP5-SD', 'FAMAS', 'AUG', 'SG 553', 'SSG 08', 'MAC-10', 'MP9', 'UMP-45', 'MP7', 'PP-Bizon', 'P90'];
   const PISTOLS = ['Default', 'Glock-18', 'USP-S', 'P250', 'Five-SeveN', 'Tec-9', 'Dual Berettas', 'Desert Eagle', 'CZ75-Auto', 'R8 Revolver'];
   const ARMOR_OPTIONS = ['None', 'Kevlar', 'Kevlar+Helmet'];
 
+  var MAIN_WEAPON_IMAGES = {
+    'AK-47': 'assets/ak47.png',
+    'AWP': 'assets/awp.png',
+    'Galil AR': 'assets/galil-ar.png',
+    'M4A4': 'assets/m4a4.png',
+    'M4A1-S': 'assets/m4a1s.png',
+    'MP5-SD': 'assets/mp5sd.png'
+  };
+
   let currentSide = 'T';
   let currentStrategy = 'halfbuy';
+  const CT_AVATAR_URL = 'assets/ct-avatar.png';
+  const T_AVATAR_URL = 'https://i.imgur.com/JhMpxJq_d.webp?maxwidth=760&fidelity=grand';
+
+  // Round history for win-rate prediction: { round, result: 'win'|'loss', avgEconomyAfter }
+  let roundHistory = [];
 
   function getMolotovPrice() {
     return currentSide === 'CT' ? PRICES['Incendiary'] : PRICES['Molotov'];
@@ -120,6 +135,7 @@
     document.getElementById('totalEquipment').textContent = '$' + totalEq.toLocaleString();
     // next round avg (assuming loss): current money + loss bonus (fixed 1400 here; can extend with win/loss state)
     document.getElementById('nextRoundAvg').textContent = '$' + (avg + lossBonus).toLocaleString();
+    if (document.getElementById('ecoWinRateChart')) renderPredictionChart();
   }
 
   // ---------- Strategy recommendations ----------
@@ -182,18 +198,34 @@
     const container = document.getElementById('recommendItems');
     const totalEl = document.getElementById('recommendTotal');
     if (placeholder) placeholder.style.display = 'none';
-    container.innerHTML = items.map(i => {
-      const label = i.name + (i.price ? ' $' + i.price : '');
-      return `<span class="eco-recommend-item" title="${i.name}">${escapeHtml(i.name)} <strong>$${i.price}</strong></span>`;
-    }).join(' ');
-    totalEl.textContent = '= $' + total.toLocaleString();
-    totalEl.style.display = 'block';
+    container.innerHTML = items.map(i =>
+      `<span class="eco-recommend-item" title="${i.name}">${escapeHtml(i.name)} <strong>$${i.price}</strong></span>`
+    ).join(' + ');
+    if (totalEl) {
+      totalEl.textContent = '$' + total.toLocaleString();
+      totalEl.style.display = 'inline';
+    }
   }
 
   function escapeHtml(s) {
     const div = document.createElement('div');
     div.textContent = s;
     return div.innerHTML;
+  }
+
+  function getAvatarUrl() {
+    return currentSide === 'CT' ? CT_AVATAR_URL : T_AVATAR_URL;
+  }
+
+  function updateAvatarsForSide() {
+    var url = getAvatarUrl();
+    document.querySelectorAll('.eco-player-avatar').forEach(function (el) {
+      el.className = 'eco-player-avatar eco-avatar-' + currentSide;
+      el.style.backgroundImage = "url('" + url + "')";
+      el.style.backgroundSize = 'contain';
+      el.style.backgroundRepeat = 'no-repeat';
+      el.style.backgroundPosition = 'center';
+    });
   }
 
   function renderPlayerCards() {
@@ -211,36 +243,43 @@
       return `<option value="${escapeHtml(val)}">${label}</option>`;
     }).join('');
 
+    const avatarClass = 'eco-player-avatar eco-avatar-' + currentSide;
+    const avatarUrl = getAvatarUrl();
+    const avatarStyle = " style=\"background-image: url('" + avatarUrl + "'); background-size: contain; background-repeat: no-repeat; background-position: center;\"";
     let html = '';
     for (let i = 1; i <= 5; i++) {
       const money = [3400, 2000, 5000, 7000, 8000][i - 1];
       html += `
         <div class="eco-player-card" data-player="${i}">
           <h4>Player ${i}</h4>
+          <div class="${avatarClass}"${avatarStyle} aria-hidden="true"></div>
           <div class="eco-player-money">
             <label for="player${i}Money">$</label>
             <input type="number" id="player${i}Money" min="0" value="${money}" aria-label="Player ${i} money">
           </div>
           <div class="eco-player-equip">
-            <label>Main</label>
+            <label>Main:</label>
             <select id="player${i}Main" aria-label="Player ${i} main weapon">
               ${MAIN_WEAPONS.map(w => `<option value="${w}">${w}</option>`).join('')}
             </select>
+            <div class="eco-main-weapon-img" id="player${i}MainImg">
+              <img src="" alt="" role="presentation">
+            </div>
           </div>
           <div class="eco-player-equip">
-            <label>Pistol</label>
+            <label>Pistol:</label>
             <select id="player${i}Pistol" aria-label="Player ${i} pistol">
               ${PISTOLS.map(p => `<option value="${p}">${p}</option>`).join('')}
             </select>
           </div>
           <div class="eco-player-equip">
-            <label>Armor</label>
+            <label>Equipment:</label>
             <select id="player${i}Armor" aria-label="Player ${i} armor">
               ${ARMOR_OPTIONS.map(a => `<option value="${a}">${a}</option>`).join('')}
             </select>
           </div>
           <div class="eco-player-equip">
-            <label>Grenades</label>
+            <label>Grenades:</label>
             <select id="player${i}Nades" aria-label="Player ${i} grenades">
               ${nadeOptions}
             </select>
@@ -254,7 +293,37 @@
       el.addEventListener('input', updateSummary);
       el.addEventListener('change', updateSummary);
     });
+
+    for (var i = 1; i <= 5; i++) {
+      updateMainWeaponImg(i);
+      var mainSelect = document.getElementById('player' + i + 'Main');
+      if (mainSelect) {
+        mainSelect.addEventListener('change', (function (idx) {
+          return function () { updateMainWeaponImg(idx); };
+        })(i));
+      }
+    }
   }
+
+  function updateMainWeaponImg(playerIndex) {
+    var select = document.getElementById('player' + playerIndex + 'Main');
+    var container = document.getElementById('player' + playerIndex + 'MainImg');
+    if (!select || !container) return;
+    var img = container.querySelector('img');
+    if (!img) return;
+    var value = select.value;
+    var src = MAIN_WEAPON_IMAGES[value] || '';
+    if (src) {
+      img.src = src;
+      img.alt = value;
+      container.classList.remove('eco-main-weapon-img-empty');
+    } else {
+      img.removeAttribute('src');
+      img.alt = '';
+      container.classList.add('eco-main-weapon-img-empty');
+    }
+  }
+
 
   function bindRoundNav() {
     const input = document.getElementById('currentRound');
@@ -277,6 +346,7 @@
         document.querySelectorAll('.eco-side-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentSide = btn.dataset.side;
+        updateAvatarsForSide();
         renderRecommendation();
       });
     });
@@ -291,6 +361,153 @@
         renderRecommendation();
       });
     });
+  }
+
+  // ---------- Win rate prediction ----------
+  const PREDICTION_LOOKBACK = 5;
+  const ECONOMY_NEUTRAL = 3500;
+  const ECONOMY_FACTOR = 0.00012; // per dollar deviation from neutral, clamped
+
+  function computeNextRoundWinProbability(history, currentAvgEconomy) {
+    if (!history || history.length === 0) {
+      const raw = 0.5 + (currentAvgEconomy - ECONOMY_NEUTRAL) * ECONOMY_FACTOR;
+      return Math.max(0.1, Math.min(0.9, raw));
+    }
+    const recent = history.slice(-PREDICTION_LOOKBACK);
+    const wins = recent.filter(r => r.result === 'win').length;
+    const recentWinRate = wins / recent.length;
+    const economyDelta = (currentAvgEconomy - ECONOMY_NEUTRAL) * ECONOMY_FACTOR;
+    const economyClamp = Math.max(-0.15, Math.min(0.15, economyDelta));
+    const p = recentWinRate + economyClamp;
+    return Math.max(0.1, Math.min(0.9, p));
+  }
+
+  function getPredictionData() {
+    const players = getPlayerData();
+    const avgNow = getAverageMoney(players);
+    const nextPred = computeNextRoundWinProbability(roundHistory, avgNow);
+    const actuals = roundHistory.map(r => ({
+      round: r.round,
+      value: r.result === 'win' ? 1 : 0,
+      label: r.result === 'win' ? 'Win' : 'Loss'
+    }));
+    const predictions = [];
+    for (let i = 0; i < roundHistory.length; i++) {
+      const nextRound = roundHistory[i].round + 1;
+      const economyUsed = roundHistory[i].avgEconomyAfter;
+      const histUpTo = roundHistory.slice(0, i + 1);
+      const pred = computeNextRoundWinProbability(histUpTo, economyUsed);
+      predictions.push({ round: nextRound, value: pred, label: (pred * 100).toFixed(0) + '%' });
+    }
+    if (roundHistory.length > 0) {
+      const last = predictions[predictions.length - 1];
+      last.value = nextPred;
+      last.label = (nextPred * 100).toFixed(0) + '%';
+    } else {
+      predictions.push({ round: 1, value: nextPred, label: (nextPred * 100).toFixed(0) + '%' });
+    }
+    return { actuals, predictions, nextPred };
+  }
+
+  function renderPredictionChart() {
+    const container = document.getElementById('ecoWinRateChart');
+    if (!container || typeof window.d3 === 'undefined') return;
+    const d3 = window.d3;
+    const { actuals, predictions } = getPredictionData();
+    const margin = { top: 10, right: 10, bottom: 28, left: 36 };
+    const cw = container.clientWidth || 280;
+    const width = Math.max(220, Math.min(cw - margin.left - margin.right, 400));
+    const height = Math.max(140, 180) - margin.top - margin.bottom;
+    d3.select(container).selectAll('*').remove();
+    if (actuals.length === 0 && predictions.length <= 1) {
+      const p = predictions[0] ? (predictions[0].value * 100).toFixed(0) : '50';
+      container.innerHTML = '<p class="eco-prediction-empty">No round history yet. Current economy suggests next round win chance: <strong>' + p + '%</strong>. Simulate Win/Loss to build the chart.</p>';
+      return;
+    }
+    const svg = d3.select(container)
+      .append('svg')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+    const allRounds = new Set(actuals.map(d => d.round).concat(predictions.map(d => d.round)));
+    const roundExtent = [Math.min(...allRounds), Math.max(...allRounds)];
+    if (roundExtent[0] === roundExtent[1]) {
+      roundExtent[1] = roundExtent[0] + 1;
+    }
+    const x = d3.scaleLinear().domain(roundExtent).range([0, width]);
+    const y = d3.scaleLinear().domain([0, 1]).nice().range([height, 0]);
+    const lineActual = d3.line()
+      .x(d => x(d.round))
+      .y(d => y(d.value))
+      .curve(d3.curveStepAfter);
+    svg.append('g')
+      .attr('transform', 'translate(0,' + height + ')')
+      .attr('class', 'eco-chart-axis')
+      .call(d3.axisBottom(x).ticks(Math.min(8, roundExtent[1] - roundExtent[0] + 1)).tickFormat(d3.format('d')));
+    svg.append('g')
+      .attr('class', 'eco-chart-axis')
+      .call(d3.axisLeft(y).ticks(5).tickFormat(d => (d * 100) + '%'));
+    if (predictions.length > 0) {
+      const linePred = d3.line()
+        .x(d => x(d.round))
+        .y(d => y(d.value));
+      const predSorted = [...predictions].sort((a, b) => a.round - b.round);
+      svg.append('path')
+        .datum(predSorted)
+        .attr('class', 'eco-chart-line-pred')
+        .attr('d', linePred);
+    }
+    if (actuals.length > 0) {
+      svg.append('path')
+        .datum(actuals.sort((a, b) => a.round - b.round))
+        .attr('class', 'eco-chart-line-actual')
+        .attr('d', lineActual);
+      svg.selectAll('.eco-chart-pt-actual')
+        .data(actuals)
+        .join('circle')
+        .attr('class', 'eco-chart-pt-actual')
+        .attr('cx', d => x(d.round))
+        .attr('cy', d => y(d.value))
+        .attr('r', 4)
+        .attr('aria-label', d => 'Round ' + d.round + ' ' + d.label);
+    }
+    if (predictions.length > 0) {
+      svg.selectAll('.eco-chart-pt-pred')
+        .data(predictions)
+        .join('circle')
+        .attr('class', 'eco-chart-pt-pred')
+        .attr('cx', d => x(d.round))
+        .attr('cy', d => y(d.value))
+        .attr('r', 4)
+        .attr('aria-label', d => 'Predicted round ' + d.round + ' ' + d.label);
+    }
+  }
+
+  function bindOutcomeButtons() {
+    const btnWin = document.getElementById('btnSimulateWin');
+    const btnLoss = document.getElementById('btnSimulateLoss');
+    function recordAndUpdate(result, bonus) {
+      const roundInput = document.getElementById('currentRound');
+      const round = parseInt(roundInput?.value || '1', 10) || 1;
+      const players = getPlayerData();
+      const avgBefore = getAverageMoney(players);
+      const avgEconomyAfter = avgBefore + bonus;
+      roundHistory.push({ round, result, avgEconomyAfter });
+      for (let i = 1; i <= 5; i++) {
+        const input = document.getElementById('player' + i + 'Money');
+        if (input) input.value = (parseInt(input.value, 10) || 0) + bonus;
+      }
+      if (roundInput) roundInput.value = round + 1;
+      updateSummary();
+      renderPredictionChart();
+    }
+    if (btnWin) {
+      btnWin.addEventListener('click', () => recordAndUpdate('win', REWARDS.winBomb));
+    }
+    if (btnLoss) {
+      btnLoss.addEventListener('click', () => recordAndUpdate('loss', REWARDS.lossBonus[0]));
+    }
   }
 
   function initThemeSync() {
@@ -322,6 +539,8 @@
     bindRoundNav();
     bindSideButtons();
     bindStrategyButtons();
+    bindOutcomeButtons();
+    renderPredictionChart();
     initThemeSync();
   }
 

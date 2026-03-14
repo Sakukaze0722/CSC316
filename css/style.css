@@ -824,7 +824,13 @@ body {
   background: var(--vis-bg);
   border: 1px solid var(--vis-border);
   border-radius: 8px;
-  transition: background 0.4s, border-color 0.4s;
+  transition: background 0.4s, border-color 0.4s, box-shadow 0.5s ease;
+}
+.eco-board-wrapper.eco-glow-win {
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.15), inset 0 0 0 1px rgba(34, 197, 94, 0.1);
+}
+.eco-board-wrapper.eco-glow-loss {
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.12), inset 0 0 0 1px rgba(239, 68, 68, 0.08);
 }
 .eco-board-main {
   flex: 1;

@@ -543,6 +543,7 @@
     const photo = chooseDotaPhoto(entry);
     const matchSummary = entry.match_summary || {};
     const matchCount = num(matchSummary.match_count);
+    const recentMatchCount = num(matchSummary.recent_match_count || (Array.isArray(entry.recent_matches) ? entry.recent_matches.length : 0));
     if (!teams.length || !hasUsableImage(photo) || matchCount <= 0) return null;
     const wins = num(matchSummary.wins);
     const winRate = matchCount > 0 ? (wins / matchCount) * 100 : 0;
@@ -571,6 +572,7 @@
       winRate,
       wins,
       matchCount,
+      recentMatchCount,
       avgKills,
       avgDeaths,
       avgAssists,
@@ -849,9 +851,9 @@
 
   async function loadDotaPlayers() {
     const [payload, activeRows, liquipediaRows] = await Promise.all([
-      d3.json(DOTA_MATCH_DATA_URL),
-      d3.csv(DOTA_ACTIVE_ROSTERS_URL),
-      d3.csv(DOTA_LIQUIPEDIA_PLAYERS_URL),
+      d3.json(DOTA_MATCH_DATA_URL, { cache: "no-store" }),
+      d3.csv(DOTA_ACTIVE_ROSTERS_URL, { cache: "no-store" }),
+      d3.csv(DOTA_LIQUIPEDIA_PLAYERS_URL, { cache: "no-store" }),
     ]);
 
     const photoLookup = new Map();
@@ -1202,6 +1204,7 @@
           <div class="player-kpi-card"><span class="player-kpi-label">K / D / A</span><span class="player-kpi-value">${dotaKdaLabel(player)}</span></div>
           <div class="player-kpi-card"><span class="player-kpi-label">GPM / XPM</span><span class="player-kpi-value">${player.avgGpm.toFixed(0)} / ${player.avgXpm.toFixed(0)}</span></div>
         </div>
+        ${player.recentMatchCount ? `<p class="inline-player-note">Recent averages are based on the latest ${player.recentMatchCount} OpenDota matches.</p>` : ""}
 
         <div class="player-viz-grid">
           <section class="player-viz-card">

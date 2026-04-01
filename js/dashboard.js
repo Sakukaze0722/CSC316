@@ -25,12 +25,6 @@
     },
   };
 
-  const ACHIEVEMENTS = [
-    { label: "Explorer I", threshold: 3 },
-    { label: "Explorer II", threshold: 8 },
-    { label: "Explorer III", threshold: 15 },
-  ];
-
   const MAP_ALIAS_TO_DATA = {
     "united states of america": "United States",
     "czechia": "Czech Republic",
@@ -137,6 +131,9 @@
   let geoPath = null;
   let svg = null;
   let mapGroup = null;
+  let mapDefs = null;
+  let countryGradientCache = new Map();
+  let countryGradientPending = new Set();
   let selectedCountry = null;
   let selectedCountryName = null;
   let selectedCountryProfile = null;
@@ -187,7 +184,6 @@
   const drawerHandle = document.getElementById("drawerHandle");
   const drawerTitle = document.getElementById("drawerTitle");
   const drawerList = document.getElementById("drawerList");
-  const achievementTrack = document.getElementById("achievementTrack");
   const storyCards = [...document.querySelectorAll(".story-card")];
   const soundToggle = document.getElementById("soundToggle");
   const particlesCanvas = document.getElementById("particlesCanvas");
@@ -296,6 +292,178 @@
   function flagImg(country) {
     const code = COUNTRY_CODE[country];
     return code ? `https://flagcdn.com/w80/${code.toLowerCase()}.png` : "";
+  }
+
+  function rgbToHex(r, g, b) {
+    return `#${[r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  function hexToRgb(hex) {
+    const clean = String(hex || "").replace("#", "");
+    if (!/^[0-9a-fA-F]{6}$/.test(clean)) return null;
+    return {
+      r: parseInt(clean.slice(0, 2), 16),
+      g: parseInt(clean.slice(2, 4), 16),
+      b: parseInt(clean.slice(4, 6), 16),
+    };
+  }
+
+  function mixHex(a, b, ratio = 0.5) {
+    const left = hexToRgb(a);
+    const right = hexToRgb(b);
+    if (!left || !right) return a || b || "#64748b";
+    return rgbToHex(
+      left.r + (right.r - left.r) * ratio,
+      left.g + (right.g - left.g) * ratio,
+      left.b + (right.b - left.b) * ratio,
+    );
+  }
+
+  function colorDistance(a, b) {
+    return Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
+  }
+
+  function saturationScore(r, g, b) {
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    return max === 0 ? 0 : (max - min) / max;
+  }
+
+  function luminanceScore(r, g, b) {
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  }
+
+  function gradientId(country) {
+    const code = COUNTRY_CODE[country];
+    return code ? `country-gradient-${code.toLowerCase()}` : "";
+  }
+
+  function buildFlagPatterns() {
+    if (!svg) return;
+    if (!mapDefs) mapDefs = svg.append("defs");
+
+    const uniqueCountries = [...new Set(
+      [...countryData.values()]
+        .map((profile) => profile?.country)
+        .filter((country) => COUNTRY_CODE[country])
+    )];
+
+    const gradients = mapDefs
+      .selectAll("linearGradient.country-flag-fill")
+      .data(uniqueCountries, (country) => gradientId(country));
+
+    gradients.exit().remove();
+
+    const entered = gradients
+      .enter()
+      .append("linearGradient")
+      .attr("class", "country-flag-fill")
+      .attr("id", (country) => gradientId(country))
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "100%")
+      .attr("y2", "100%");
+
+    entered.append("stop").attr("offset", "0%");
+    entered.append("stop").attr("offset", "100%");
+
+    entered
+      .merge(gradients)
+      .each(function (country) {
+        const fallback = countryGradientCache.get(country) || { primary: "#64748b", secondary: "#94a3b8" };
+        const grad = d3.select(this);
+        grad.select('stop[offset="0%"]').attr("stop-color", fallback.primary);
+        grad.select('stop[offset="100%"]').attr("stop-color", fallback.secondary);
+        ensureCountryGradient(country);
+      });
+  }
+
+  function extractFlagPalette(country, image) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+
+    const size = 36;
+    canvas.width = size;
+    canvas.height = size;
+    ctx.drawImage(image, 0, 0, size, size);
+
+    const { data } = ctx.getImageData(0, 0, size, size);
+    const buckets = new Map();
+
+    for (let i = 0; i < data.length; i += 4) {
+      const alpha = data[i + 3];
+      if (alpha < 200) continue;
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const qr = Math.round(r / 32) * 32;
+      const qg = Math.round(g / 32) * 32;
+      const qb = Math.round(b / 32) * 32;
+      const key = `${qr},${qg},${qb}`;
+      const bucket = buckets.get(key) || { count: 0, r: 0, g: 0, b: 0 };
+      bucket.count += 1;
+      bucket.r += r;
+      bucket.g += g;
+      bucket.b += b;
+      buckets.set(key, bucket);
+    }
+
+    const candidates = [...buckets.values()]
+      .map((bucket) => {
+        const avg = {
+          r: bucket.r / bucket.count,
+          g: bucket.g / bucket.count,
+          b: bucket.b / bucket.count,
+        };
+        const saturation = saturationScore(avg.r, avg.g, avg.b);
+        const luminance = luminanceScore(avg.r, avg.g, avg.b);
+        const neutralPenalty = saturation < 0.08 && luminance > 0.9 ? 0.35 : 1;
+        const score = bucket.count * (0.6 + saturation) * neutralPenalty;
+        return { ...avg, count: bucket.count, score };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    if (!candidates.length) return null;
+
+    const primary = candidates[0];
+    const secondary = candidates.find((candidate) => colorDistance(primary, candidate) > 80) || candidates[1] || primary;
+
+    const primaryHex = rgbToHex(primary.r, primary.g, primary.b);
+    let secondaryHex = rgbToHex(secondary.r, secondary.g, secondary.b);
+
+    if (primaryHex === secondaryHex) {
+      secondaryHex = mixHex(primaryHex, "#ffffff", luminanceScore(primary.r, primary.g, primary.b) < 0.45 ? 0.28 : 0.14);
+    }
+
+    return { primary: primaryHex, secondary: secondaryHex };
+  }
+
+  function ensureCountryGradient(country) {
+    if (!country || countryGradientCache.has(country) || countryGradientPending.has(country)) return;
+    const url = flagImg(country);
+    if (!url) return;
+
+    countryGradientPending.add(country);
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      const palette = extractFlagPalette(country, image);
+      if (palette) {
+        countryGradientCache.set(country, palette);
+        if (mapDefs) {
+          const grad = mapDefs.select(`#${gradientId(country)}`);
+          grad.select('stop[offset="0%"]').attr("stop-color", palette.primary);
+          grad.select('stop[offset="100%"]').attr("stop-color", palette.secondary);
+        }
+        updateMapColors();
+      }
+      countryGradientPending.delete(country);
+    };
+    image.onerror = () => {
+      countryGradientPending.delete(country);
+    };
+    image.src = url;
   }
 
   function mapCountryName(feature) {
@@ -886,9 +1054,10 @@
 
   function countryFill(feature) {
     const colors = getGameColors();
-    if (feature === selectedCountry) return colors.active;
     const profile = countryProfileByFeature(feature);
     if (!profile || !countryRank.length) return currentGame === "dota2" ? colors.base : colors.base;
+    const fillGradientId = gradientId(profile.country);
+    if (fillGradientId) return `url(#${fillGradientId})`;
     const topValue = currentGame === "dota2"
       ? (countryRank[0].playerCount || 1)
       : countryRank[0].playerCount;
@@ -901,6 +1070,12 @@
 
   function countryOpacity(feature) {
     return 1;
+  }
+
+  function countryHoverFill(feature) {
+    const profile = countryProfileByFeature(feature);
+    if (profile && gradientId(profile.country)) return countryFill(feature);
+    return getGameColors().hover;
   }
 
   function playTone(type = "soft") {
@@ -939,13 +1114,6 @@
         return `<li><span>${i + 1}. ${esc(flagEmoji(profile.country))} ${esc(profile.country)}</span><strong>${profile.avgWinRate.toFixed(1)}%</strong></li>`;
       })
       .slice(0, 10)
-      .join("");
-  }
-
-  function renderAchievements() {
-    if (!achievementTrack) return;
-    achievementTrack.innerHTML = ACHIEVEMENTS
-      .map((a) => `<span class="achievement-badge ${exploredCountries.size >= a.threshold ? "unlocked" : ""}">${a.label}</span>`)
       .join("");
   }
 
@@ -1605,6 +1773,7 @@
 
   function updateMapColors() {
     if (!svg) return;
+    buildFlagPatterns();
     const colors = getGameColors();
     svg
       .selectAll("path.country")
@@ -1686,7 +1855,7 @@
     d3.select(event.target)
       .transition()
       .duration(120)
-      .attr("fill", colors.hover)
+      .attr("fill", countryHoverFill(feature))
       .attr("stroke", colors.active)
       .attr("stroke-width", 1.1)
       .style("opacity", 1)
@@ -1724,7 +1893,6 @@
 
     updateMapColors();
     renderCountryPanel(name);
-    renderAchievements();
     detailPanel.classList.remove("collapsed");
 
     const rect = mapContainer.getBoundingClientRect();
@@ -2232,11 +2400,13 @@
     const w = mapContainer.clientWidth || 960;
     const h = Math.max(500, window.innerHeight - 260);
     svg = d3.select("#worldMap").append("svg").attr("viewBox", [0, 0, w, h]).attr("width", "100%").attr("height", "100%").style("background", "transparent");
+    mapDefs = svg.append("defs");
     initProjection();
     worldTopology = await d3.json(WORLD_ATLAS_URL);
 
     const countries = topojson.feature(worldTopology, worldTopology.objects.countries);
     mapGroup = svg.append("g");
+    buildFlagPatterns();
 
     const colors = getGameColors();
     const paths = mapGroup
@@ -2464,7 +2634,6 @@
     initMapZoomControl();
     updateStatusBar();
     renderStoryVisibility();
-    renderAchievements();
 
     try {
       await loadCSPlayers();

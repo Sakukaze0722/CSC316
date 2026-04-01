@@ -1,527 +1,876 @@
-/* ============================================
-   Eco Board — Team Economic Info
-   ============================================ */
-
-.eco-board-page {
-  padding-bottom: 2rem;
+body.eco-board-page {
+  padding-bottom: 3rem;
 }
 
-/* Glow on Win/Loss (standalone page uses .eco-board-main as target) */
-.eco-board-main.eco-glow-win {
-  box-shadow: 0 0 24px rgba(34, 197, 94, 0.15), inset 0 0 0 1px rgba(34, 197, 94, 0.1);
-  transition: box-shadow 0.5s ease;
-}
-.eco-board-main.eco-glow-loss {
-  box-shadow: 0 0 24px rgba(239, 68, 68, 0.12), inset 0 0 0 1px rgba(239, 68, 68, 0.08);
-  transition: box-shadow 0.5s ease;
+body.eco-board-page.eco-embedded-mode {
+  padding-bottom: 0;
+  background: transparent;
 }
 
-/* Round nav */
-.eco-round-nav {
-  display: flex;
-  align-items: center;
+body.eco-board-page.eco-embedded-mode::before {
+  display: none;
+}
+
+.eco-embedded-mode .eco-board-header,
+.eco-embedded-mode .eco-storyboard {
+  display: none;
+}
+
+.eco-embedded-mode .eco-main {
+  max-width: none;
+  padding: 1rem;
+}
+
+.eco-board-page .eco-board-header .header-inner {
   justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-.eco-round-input-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.eco-round-label {
-  color: var(--dbg-panel-text);
-  font-size: 0.95rem;
-}
-.eco-round-input {
-  width: 4rem;
-  padding: 0.35rem 0.5rem;
-  font-size: 1rem;
-  text-align: center;
-  background: var(--dbg-toggle-bg);
-  border: 1px solid var(--dbg-toggle-border);
-  border-radius: 6px;
-  color: var(--dbg-btn-hover);
-}
-.eco-nav-btn {
-  padding: 0.4rem 0.9rem;
-  font-size: 0.9rem;
-  background: var(--dbg-game-bg);
-  border: 1px solid var(--dbg-game-border);
-  border-radius: 8px;
-  color: var(--dbg-btn-color);
-  cursor: pointer;
-}
-.eco-nav-btn:hover {
-  color: var(--dbg-btn-hover);
-  border-color: var(--dbg-btn-hover);
 }
 
-/* Side select */
-.eco-side-select {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-.eco-side-select label {
-  color: var(--dbg-panel-text);
-  font-size: 0.9rem;
-}
-.eco-side-btns {
-  display: flex;
-  gap: 0.25rem;
-}
-.eco-side-btn {
-  padding: 0.3rem 0.8rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  background: var(--dbg-game-bg);
-  border: 1px solid var(--dbg-game-border);
-  border-radius: 6px;
-  color: var(--dbg-btn-color);
-  cursor: pointer;
-}
-.eco-side-btn:hover {
-  color: var(--dbg-btn-hover);
-}
-.eco-side-btn.active {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.5);
-  color: #93c5fd;
-}
-
-/* Players grid — one row of five, like sketch */
-.eco-players-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
-  margin: 0 auto 1.5rem;
-  padding: 0 0.5rem;
-  max-width: 100%;
-  min-width: 0;
-}
-@media (max-width: 900px) {
-  .eco-players-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
-  }
-}
-.eco-player-card {
-  background: var(--dbg-panel-bg);
-  border: 1px solid var(--dbg-panel-border);
-  border-radius: 10px;
-  padding: 0.6rem 0.5rem;
+.eco-header-copy {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
 }
-.eco-player-card h4 {
+
+.eco-kicker,
+.eco-map-meta,
+.eco-data-status,
+.eco-round-context,
+.eco-section-copy,
+.eco-speed-label {
+  color: var(--dbg-panel-placeholder);
+  font-size: 0.78rem;
+}
+
+.eco-kicker {
   margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--dbg-panel-title);
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.eco-subtitle {
+  margin: 0;
+  max-width: 920px;
+  color: var(--dbg-panel-text);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.eco-main {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 1.5rem 3rem;
+}
+
+.eco-storyboard,
+.eco-command-bar,
+.eco-round-toolbar,
+.eco-round-strip-panel,
+.eco-overview-board,
+.eco-loadout-board,
+.eco-story-panel,
+.eco-glossary-panel,
+.eco-score-section,
+.eco-team-summary,
+.eco-impact-panel,
+.eco-team-loadout {
+  background: var(--dbg-panel-bg);
+  border: 1px solid var(--dbg-panel-border);
+  border-radius: 18px;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+}
+
+.eco-storyboard,
+.eco-round-strip-panel,
+.eco-loadout-board,
+.eco-story-panel,
+.eco-glossary-panel,
+.eco-score-section {
+  padding: 1rem 1.15rem 1.15rem;
+}
+
+.eco-storyboard {
+  max-width: 980px;
+  margin: 2rem auto 1.25rem;
+}
+
+.eco-storyboard h2,
+.eco-section-title {
+  margin: 0 0 0.55rem;
   background: var(--dbg-panel-title);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-align: center;
+  font-size: 1.08rem;
+  font-weight: 800;
 }
-.eco-player-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--dbg-toggle-bg);
-  border: 1px solid var(--dbg-toggle-border);
-  flex-shrink: 0;
-  margin: 0 auto;
-}
-.eco-player-money {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #86efac;
-  text-align: center;
-}
-.eco-player-money input {
-  width: 100%;
-  max-width: 4.5rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-  padding: 0.2rem 0.35rem;
-  background: var(--dbg-toggle-bg);
-  border: 1px solid var(--dbg-toggle-border);
-  border-radius: 6px;
-  color: #86efac;
-  margin: 0 auto;
-  display: block;
-  box-sizing: border-box;
-}
-.eco-player-equip {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.eco-player-equip label {
-  font-size: 0.65rem;
-  color: var(--dbg-panel-placeholder);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-.eco-player-equip select {
-  padding: 0.2rem 0.35rem;
-  font-size: 0.7rem;
-  background: var(--dbg-toggle-bg);
-  border: 1px solid var(--dbg-toggle-border);
-  border-radius: 4px;
+
+.eco-storyboard p,
+.eco-section-copy {
+  margin: 0;
   color: var(--dbg-panel-text);
+  line-height: 1.7;
+}
+
+.eco-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.eco-command-bar,
+.eco-round-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1rem;
+  padding: 0.95rem 1.1rem;
+}
+
+.eco-map-tabs,
+.eco-command-actions,
+.eco-glossary-grid,
+.eco-loadout-grid,
+.eco-overview-board,
+.eco-explain-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.eco-map-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: 1 1 520px;
+}
+
+.eco-command-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.eco-map-tab,
+.eco-control-btn,
+.eco-round-chip {
+  border: 1px solid var(--dbg-game-border);
+  background: var(--dbg-game-bg);
+  color: var(--dbg-btn-color);
+}
+
+.eco-map-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.72rem 0.95rem;
+  border-radius: 14px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.eco-map-tab:hover,
+.eco-control-btn:hover,
+.eco-round-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.28);
+}
+
+.eco-map-tab.active {
+  color: #0f172a;
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.04)), var(--dbg-game-bg);
+}
+
+body.eco-board-page[data-theme="dark"] .eco-map-tab.active {
+  color: #eff6ff;
+}
+
+.eco-tab-score,
+.eco-metric-pill,
+.eco-impact-chip,
+.eco-round-note,
+.eco-buy-pill,
+.eco-weapon-pill,
+.eco-glossary-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.24rem 0.62rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--dbg-panel-text);
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.eco-tab-score[data-winner="vitality"] { color: #2563eb; background: rgba(59, 130, 246, 0.12); }
+.eco-tab-score[data-winner="mongolz"] { color: #dc2626; background: rgba(239, 68, 68, 0.12); }
+
+.eco-control-btn {
+  padding: 0.68rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.84rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.eco-main-weapon-img {
-  margin-top: 0.35rem;
-  min-height: 32px;
+.eco-control-btn.is-secondary {
+  background: transparent;
+}
+
+.eco-speed-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.eco-speed-select,
+.eco-round-range {
+  accent-color: #2563eb;
+}
+
+.eco-speed-select {
+  border: 1px solid var(--dbg-game-border);
+  border-radius: 10px;
+  background: var(--dbg-game-bg);
+  color: var(--dbg-panel-text);
+  padding: 0.45rem 0.6rem;
+}
+
+.eco-round-toolbar {
+  margin-top: 1rem;
+}
+
+.eco-round-head {
+  flex: 1 1 280px;
+}
+
+.eco-round-label {
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+body.eco-board-page[data-theme="dark"] .eco-round-label,
+body.eco-board-page[data-theme="dark"] .eco-card-title,
+body.eco-board-page[data-theme="dark"] .eco-card-subtitle,
+body.eco-board-page[data-theme="dark"] .eco-story-title {
+  color: #f8fafc;
+}
+
+.eco-round-range {
+  flex: 1 1 320px;
+}
+
+.eco-round-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+  gap: 0.55rem;
+}
+
+.eco-round-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.58rem 0.4rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.eco-round-chip.is-active {
+  border-color: rgba(37, 99, 235, 0.4);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.eco-round-chip.is-event {
+  box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.35);
+}
+
+.eco-round-chip-vitality { border-top: 3px solid #3b82f6; }
+.eco-round-chip-mongolz { border-top: 3px solid #ef4444; }
+
+.eco-round-chip strong {
+  font-size: 0.88rem;
+}
+
+.eco-round-chip span {
+  font-size: 0.68rem;
+  color: var(--dbg-panel-placeholder);
+}
+
+.eco-overview-board {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.88fr) minmax(0, 1fr);
+  align-items: stretch;
+  margin-top: 1rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.eco-team-summary,
+.eco-impact-panel,
+.eco-team-loadout {
+  padding: 1rem;
+}
+
+.eco-team-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.eco-team-summary-v { border-top: 4px solid #3b82f6; }
+.eco-team-summary-m { border-top: 4px solid #ef4444; }
+
+.eco-card-title,
+.eco-story-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.eco-card-subtitle,
+.eco-story-copy,
+.eco-empty-copy,
+.eco-story-list li,
+.eco-player-meta {
+  margin: 0;
+  color: var(--dbg-panel-text);
+  line-height: 1.65;
+}
+
+.eco-metric-grid,
+.eco-team-meta,
+.eco-story-list,
+.eco-player-utility {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.eco-impact-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  border-top: 4px solid #f59e0b;
+}
+
+.eco-impact-track,
+.eco-impact-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.eco-loadout-board,
+.eco-score-section {
+  margin-top: 1rem;
+}
+
+.eco-explain-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.eco-loadout-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.eco-eq-gap-wrap {
+  padding: 0.6rem 1rem;
+  background: var(--dbg-panel-bg);
+  border-left: 1px solid var(--dbg-panel-border);
+  border-right: 1px solid var(--dbg-panel-border);
+}
+
+.eco-eq-gap-bar {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.eco-team-loadout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.eco-roster-cards {
+  display: flex;
+  gap: 0.7rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+}
+
+.eco-player-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.04);
+  padding: 0.75rem;
+  min-width: 168px;
+  min-height: 178px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.eco-player-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+.eco-player-head {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.6rem;
 }
-.eco-main-weapon-img-empty {
-  min-height: 0;
-  display: none;
+
+.eco-player-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(148, 163, 184, 0.18), rgba(148, 163, 184, 0.06));
+  color: var(--dbg-btn-hover);
+  font-size: 0.88rem;
+  font-weight: 800;
 }
-.eco-main-weapon-img img {
-  max-width: 100%;
-  max-height: 48px;
+
+.eco-player-name {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.eco-player-loadout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.eco-player-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.45rem;
+  color: var(--dbg-panel-text);
+  font-size: 0.72rem;
+}
+
+.eco-player-row strong {
+  color: var(--dbg-btn-hover);
+  font-weight: 700;
+}
+
+.eco-weapon-pill img {
+  width: 16px;
+  height: 16px;
   object-fit: contain;
 }
 
-/* Bottom section: 3 columns per design — outcome | stats | strategy + recommend */
-.eco-bottom-section {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 1.5rem;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 1rem;
-  align-items: start;
-}
-@media (max-width: 800px) {
-  .eco-bottom-section {
-    grid-template-columns: 1fr;
-  }
+.eco-glossary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.eco-outcome-block,
-.eco-stats-block,
-.eco-strategy-block {
-  background: var(--dbg-panel-bg);
-  border: 1px solid var(--dbg-panel-border);
-  border-radius: 12px;
-  padding: 1.25rem;
-}
-.eco-outcome-block h3,
-.eco-stats-block h3,
-.eco-strategy-block h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-  color: var(--dbg-panel-title);
-  background: var(--dbg-panel-title);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.eco-glossary-card {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  padding: 0.8rem;
+  background: rgba(148, 163, 184, 0.04);
 }
 
-.eco-outcome-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.eco-outcome-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  background: var(--dbg-game-bg);
-  border: 1px solid var(--dbg-game-border);
-  border-radius: 8px;
-  color: var(--dbg-btn-color);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.eco-outcome-btn:hover {
-  color: var(--dbg-btn-hover);
-  border-color: var(--dbg-btn-hover);
+.eco-glossary-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
 }
 
-/* Win/Loss flash + ripple (Kill Vector Field–style impact feedback) */
-.eco-outcome-block { position: relative; overflow: visible; }
-.eco-outcome-btn { position: relative; z-index: 1; transition: transform 0.2s ease, box-shadow 0.3s ease; }
-.eco-outcome-btn:active { transform: scale(0.98); }
-.eco-outcome-btn.flash-win {
-  animation: eco-flash-win 0.6s ease-out;
-}
-.eco-outcome-btn.flash-loss {
-  animation: eco-flash-loss 0.6s ease-out;
-}
-@keyframes eco-flash-win {
-  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.8); }
-  35% { box-shadow: 0 0 28px 12px rgba(34, 197, 94, 0.5); }
-  100% { box-shadow: none; }
-}
-@keyframes eco-flash-loss {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-  35% { box-shadow: 0 0 28px 12px rgba(239, 68, 68, 0.45); }
-  100% { box-shadow: none; }
-}
-.eco-outcome-ripple {
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-  animation: eco-ripple 0.8s ease-out forwards;
-}
-@keyframes eco-ripple {
-  0% { transform: scale(0); opacity: 0.7; }
-  100% { transform: scale(4); opacity: 0; }
-}
-.eco-outcome-ripple.ripple-win { background: radial-gradient(circle, rgba(34, 197, 94, 0.4) 0%, transparent 70%); }
-.eco-outcome-ripple.ripple-loss { background: radial-gradient(circle, rgba(239, 68, 68, 0.35) 0%, transparent 70%); }
-
-.eco-summary-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-size: 0.9rem;
-  color: var(--dbg-panel-text);
-}
-.eco-summary-list li {
-  margin-bottom: 0.35rem;
-}
-.eco-summary-list li strong.eco-pulse {
-  animation: eco-number-pulse 0.5s ease-out;
-}
-@keyframes eco-number-pulse {
-  0% { text-shadow: 0 0 12px currentColor; opacity: 1; }
-  50% { text-shadow: 0 0 20px currentColor; opacity: 0.9; }
-  100% { text-shadow: none; opacity: 1; }
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  border: 0;
-}
-
-.eco-strategy-btns {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-.eco-strategy-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  background: var(--dbg-game-bg);
-  border: 1px solid var(--dbg-game-border);
-  border-radius: 8px;
-  color: var(--dbg-btn-color);
-  cursor: pointer;
-}
-.eco-strategy-btn:hover {
-  color: var(--dbg-btn-hover);
-  border-color: var(--dbg-btn-hover);
-}
-.eco-strategy-btn.active {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.5);
-  color: #93c5fd;
-}
-
-.eco-strategy-block .eco-strategy-btns {
-  margin-bottom: 1rem;
-}
-
-.eco-recommend-inline {
-  margin-top: 0.5rem;
-}
-.eco-recommend-label {
+.eco-score-chart svg {
   display: block;
-  font-size: 0.85rem;
-  color: var(--dbg-panel-text);
-  margin-bottom: 0.35rem;
-}
-.eco-recommend-content {
-  min-height: 2rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-}
-.eco-recommend-placeholder {
-  color: var(--dbg-panel-placeholder);
-  font-size: 0.9rem;
-  margin: 0;
-}
-.eco-recommend-items {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  align-items: center;
-}
-.eco-recommend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.4rem;
-  background: var(--dbg-toggle-bg);
-  border-radius: 6px;
-  font-size: 0.8rem;
-  color: var(--dbg-panel-text);
-  animation: eco-recommend-in 0.35s ease-out backwards;
-}
-.eco-recommend-item:nth-child(1) { animation-delay: 0.02s; }
-.eco-recommend-item:nth-child(2) { animation-delay: 0.06s; }
-.eco-recommend-item:nth-child(3) { animation-delay: 0.1s; }
-.eco-recommend-item:nth-child(4) { animation-delay: 0.14s; }
-.eco-recommend-item:nth-child(5) { animation-delay: 0.18s; }
-.eco-recommend-item:nth-child(6) { animation-delay: 0.22s; }
-.eco-recommend-item:nth-child(7) { animation-delay: 0.26s; }
-@keyframes eco-recommend-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.eco-recommend-total {
-  display: inline-block;
-  transition: transform 0.2s ease;
-}
-.eco-recommend-total.eco-total-pop {
-  animation: eco-total-pop 0.4s ease-out;
-}
-@keyframes eco-total-pop {
-  0% { transform: scale(1); }
-  30% { transform: scale(1.08); }
-  100% { transform: scale(1); }
-}
-.eco-recommend-equals {
-  font-weight: 700;
-  color: var(--dbg-panel-text);
-}
-.eco-recommend-total {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #86efac;
+  width: 100%;
 }
 
-/* ============================================
-   Win rate prediction chart
-   ============================================ */
-.eco-prediction-card,
-.eco-prediction-section {
-  margin-top: 1rem;
+.eco-chart-axis path,
+.eco-chart-axis line {
+  stroke: rgba(148, 163, 184, 0.28);
 }
-.eco-prediction-section {
-  max-width: 1100px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 1.25rem;
-  background: var(--dbg-panel-bg);
-  border: 1px solid var(--dbg-panel-border);
-  border-radius: 12px;
-  margin-top: 1.5rem;
-}
-.eco-prediction-section h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-  color: var(--dbg-panel-title);
-}
-.eco-prediction-desc {
-  font-size: 0.8rem;
-  color: var(--dbg-panel-text);
-  margin: 0 0 0.75rem;
-  line-height: 1.35;
-}
-.eco-prediction-chart {
-  width: 100%;
-  min-width: 240px;
-  min-height: 180px;
-  margin-bottom: 0.5rem;
-}
-.eco-prediction-empty {
-  font-size: 0.85rem;
-  color: var(--dbg-panel-text);
-  margin: 0;
-  padding: 1rem;
-  text-align: center;
-}
-.eco-prediction-empty strong {
-  color: #86efac;
-}
-.eco-prediction-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  font-size: 0.75rem;
-  color: var(--dbg-panel-text);
-}
-.eco-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-.eco-legend-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-.eco-legend-dot-solid {
-  background: #58a6ff;
-}
-.eco-legend-dot-hollow {
-  background: transparent;
-  border: 2px solid #f472b6;
-  box-sizing: border-box;
-}
-.eco-chart-axis line,
-.eco-chart-axis path {
-  stroke: var(--dbg-panel-border);
-}
+
 .eco-chart-axis text {
   fill: var(--dbg-panel-text);
   font-size: 10px;
 }
-.eco-chart-line-actual {
+
+.eco-score-line-v,
+.eco-score-line-m {
   fill: none;
-  stroke: #58a6ff;
-  stroke-width: 2;
+  stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
-  animation: eco-chart-draw 0.85s ease-out forwards;
 }
-.eco-chart-line-pred {
-  fill: none;
-  stroke: #f472b6;
+
+.eco-score-line-v { stroke: #3b82f6; }
+.eco-score-line-m { stroke: #ef4444; }
+.eco-score-band { fill: rgba(59, 130, 246, 0.08); }
+.eco-score-band.mongolz { fill: rgba(239, 68, 68, 0.08); }
+.eco-score-point-v { fill: #2563eb; }
+.eco-score-point-m { fill: #dc2626; }
+.eco-score-halftime {
+  stroke: rgba(148, 163, 184, 0.38);
   stroke-width: 1.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  animation: eco-chart-draw 0.85s ease-out 0.15s forwards;
+  stroke-dasharray: 4 4;
 }
-@keyframes eco-chart-draw {
-  to { stroke-dashoffset: 0; }
+
+/* ── Scorebar ──────────────────────────────────────────── */
+.eco-scorebar {
+  background: var(--dbg-panel-bg);
+  border: 1px solid var(--dbg-panel-border);
+  border-radius: 18px;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+  padding: 0.7rem 1.2rem 0.65rem;
+  margin-top: 1rem;
 }
-.eco-chart-pt-actual {
-  fill: #58a6ff;
-  stroke: rgba(255,255,255,0.4);
-  stroke-width: 1;
+
+.eco-sb-inner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
 }
-.eco-chart-pt-pred {
-  fill: transparent;
-  stroke: #f472b6;
-  stroke-width: 2;
+
+.eco-sb-team {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.eco-sb-team-v { justify-content: flex-start; }
+.eco-sb-team-m { justify-content: flex-end; }
+
+.eco-sb-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--dbg-btn-hover);
+}
+
+.eco-sb-money {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--dbg-panel-text);
+}
+
+.eco-sb-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.eco-sb-score {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: var(--dbg-btn-hover);
+}
+
+.eco-sb-event {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #f59e0b;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  text-align: center;
+}
+
+.eco-sb-aftershock {
+  margin: 0.5rem 0 0;
+  font-size: 0.74rem;
+  color: var(--dbg-panel-placeholder);
+  text-align: center;
+}
+
+/* ── Tier legend strip (above round navigator chips) ───── */
+.eco-tier-legend-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.eco-tier-legend-strip .eco-tier-badge {
+  padding: 0.28rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: default;
+}
+
+/* Win / loss pill tints */
+.eco-metric-pill.is-win  { background: rgba(34,197,94,0.14);  color: #16a34a; border-color: transparent; }
+.eco-metric-pill.is-loss { background: rgba(239,68,68,0.14);   color: #dc2626; border-color: transparent; }
+
+/* ── Team loadout header ───────────────────────────────── */
+.eco-team-loadout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.eco-team-loadout-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.eco-side-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.eco-side-t  { background: rgba(249, 115, 22, 0.14); color: #ea580c; }
+.eco-side-ct { background: rgba(59, 130, 246, 0.14);  color: #2563eb; }
+
+.eco-buy-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.eco-tier-badge-pistol { background: rgba(148,163,184,0.18); color: #64748b; }
+.eco-tier-badge-eco    { background: rgba(245,158,11,0.15);  color: #d97706; }
+.eco-tier-badge-half   { background: rgba(59,130,246,0.15);  color: #2563eb; }
+.eco-tier-badge-force  { background: rgba(139,92,246,0.15);  color: #7c3aed; }
+.eco-tier-badge-full   { background: rgba(34,197,94,0.15);   color: #16a34a; }
+
+/* ── Power meter ───────────────────────────────────────── */
+.eco-power-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.eco-power-pip {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  transition: background 0.3s ease;
+}
+
+#ecoTeamPanelVitality .eco-power-pip.is-filled { background: #3b82f6; border-color: transparent; }
+#ecoTeamPanelMongolz  .eco-power-pip.is-filled { background: #ef4444; border-color: transparent; }
+
+.eco-power-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--dbg-panel-text);
+  margin-left: 0.2rem;
+}
+
+/* ── Player card redesign ──────────────────────────────── */
+.eco-player-card {
+  min-width: 150px;
+  min-height: 0;
+  padding: 0.8rem 0.75rem 0.6rem;
+}
+
+.eco-player-head {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.eco-player-money {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 0.3rem 0 0.4rem;
+  color: var(--dbg-btn-hover);
+}
+
+.eco-row-label {
+  color: var(--dbg-panel-placeholder);
+  font-size: 0.67rem;
+  min-width: 34px;
+  flex-shrink: 0;
+}
+
+.eco-row-value {
+  color: var(--dbg-btn-hover);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.eco-weapon-pill img { width: 18px; height: 18px; object-fit: contain; }
+
+/* Buy tier color bar at card bottom */
+.eco-player-tier-bar {
+  height: 3px;
+  border-radius: 2px;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.eco-tier-bar-pistol { background: #94a3b8; }
+.eco-tier-bar-eco    { background: #f59e0b; }
+.eco-tier-bar-half   { background: #3b82f6; }
+.eco-tier-bar-force  { background: #8b5cf6; }
+.eco-tier-bar-full   { background: #22c55e; }
+
+/* Armor visual */
+.eco-armor-none, .eco-util-none { color: var(--dbg-panel-placeholder); font-size: 0.7rem; }
+
+.eco-armor-pip {
+  display: inline-block;
+  width: 9px;
+  height: 11px;
+  border-radius: 2px;
+  margin-right: 1px;
+}
+
+.eco-armor-body { background: #3b82f6; }
+.eco-armor-head { background: #8b5cf6; }
+.eco-armor-text { font-size: 0.68rem; color: var(--dbg-panel-text); }
+
+/* Grenade icons */
+.eco-grenade-row { display: flex; gap: 0.1rem; flex-wrap: wrap; }
+.eco-gren-icon   { font-size: 0.82rem; cursor: default; line-height: 1; }
+.eco-c4-badge    { font-size: 0.72rem; }
+
+/* ── Consequence strip ─────────────────────────────────── */
+.eco-consequence-strip {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 1rem 1.4rem;
+}
+
+.eco-consequence-win,
+.eco-consequence-loss {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.eco-consequence-loss { align-items: flex-end; text-align: right; }
+
+.eco-consequence-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--dbg-panel-placeholder);
+}
+
+.eco-consequence-amount {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.eco-consequence-win  .eco-consequence-amount { color: #22c55e; }
+.eco-consequence-loss .eco-consequence-amount { color: #ef4444; }
+
+.eco-consequence-note {
+  font-size: 0.72rem;
+  color: var(--dbg-panel-text);
+}
+
+.eco-consequence-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.eco-consequence-vs {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--dbg-panel-placeholder);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.eco-consequence-sentence {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--dbg-panel-text);
+  text-align: center;
+  line-height: 1.5;
+  max-width: 260px;
+}
+
+/* ── 3A: Player card entrance animation ────────────────── */
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.eco-player-card {
+  animation: cardSlideIn 0.32s ease-out both;
+  animation-delay: calc(var(--card-idx, 0) * 0.06s);
+}
+
+/* ── 3D: Eco chain aftershock highlight ─────────────────── */
+@keyframes aftershockPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
+  50%       { box-shadow: 0 0 0 5px rgba(251, 146, 60, 0.22); }
+}
+
+.eco-round-chip.is-aftershock {
+  border-color: rgba(251, 146, 60, 0.55);
+  animation: aftershockPulse 1.4s ease-in-out infinite;
+}
+
+.eco-round-chip.is-active.is-aftershock {
+  animation: aftershockPulse 1.4s ease-in-out infinite;
+}
+
+@media (max-width: 1120px) {
+  .eco-overview-board,
+  .eco-explain-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .eco-main { padding: 0 1rem 2rem; }
+  .eco-command-bar,
+  .eco-round-toolbar { padding: 0.9rem; }
+  .eco-map-tabs,
+  .eco-glossary-grid { grid-template-columns: 1fr; }
+  .eco-round-strip { grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); }
 }

@@ -6,7 +6,6 @@
   <title>CSC316 — Five Color Squad</title>
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/dashboard.css?v=4">
-  <link rel="stylesheet" href="css/eco_board.css?v=1">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
@@ -586,87 +585,42 @@
       </div>
     </section>
 
-    <!-- Team Economic Info (Eco Board) sub-section -->
-    <div class="analysis-header">
-      <h2>Team Economic Info (Eco Board)</h2>
-      <p>Enter current team equipment and money, then choose Eco / Half Buy / Full Buy to get recommended loadouts. Based on CS2 economy and equipment rules.</p>
+  </div>
+
+  <!-- ============================================================
+       Visualization 5: Economy Storyline
+       ============================================================ -->
+  <div class="analysis-content fade-section" id="vis5Section">
+    <div class="storyboard-text">
+      <h3>The Economy Desk: Read The Buy, Read The Map</h3>
+      <p>
+        Counter-Strike economy is easiest to understand round by round: what each side could afford,
+        what kind of buy that produced, and how the next rounds changed because of it.
+      </p>
+      <p>
+        This board works like a round control desk instead of a stock chart. It lets viewers inspect
+        one round at a time, compare the two teams' buys directly, and read the follow-up impact in
+        plain language.
+      </p>
+      <p>
+        <strong>Why it matters:</strong> It helps even non-CS viewers tell the difference between a
+        fully armed round, a desperate force, and a saving eco that is really about the next fight.
+      </p>
     </div>
-    <section class="eco-board-demo-section">
-      <div class="vis-container">
-        <div class="eco-board-wrapper">
-          <div class="eco-board-main eco-board-inline">
-            <section class="eco-round-nav">
-              <button type="button" class="eco-nav-btn" id="btnLastRound" aria-label="Previous round">← Last Round</button>
-              <div class="eco-round-input-wrap">
-                <span class="eco-round-label">Round</span>
-                <input type="number" id="currentRound" class="eco-round-input" min="1" value="1" aria-label="Current round">
-              </div>
-              <button type="button" class="eco-nav-btn" id="btnNextRound" aria-label="Next round">Next Round →</button>
-            </section>
-            <section class="eco-side-select">
-              <label>Side</label>
-              <div class="eco-side-btns">
-                <button type="button" class="eco-side-btn active" data-side="T">T</button>
-                <button type="button" class="eco-side-btn" data-side="CT">CT</button>
-              </div>
-            </section>
-            <section class="eco-players-grid" id="playersGrid"></section>
-            <section class="eco-bottom-section">
-              <div class="eco-outcome-block">
-                <h3>Round outcome</h3>
-                <button type="button" class="eco-outcome-btn" id="btnSimulateWin" title="Simulate round win">Win +<span id="winBonus">3250</span></button>
-                <button type="button" class="eco-outcome-btn" id="btnSimulateLoss" title="Simulate round loss">Loss +<span id="lossBonus">1400</span></button>
-                <span id="lossBonusMax" class="sr-only"></span>
-              </div>
-              <div class="eco-stats-block">
-                <h3>Team economy</h3>
-                <ul class="eco-summary-list">
-                  <li>Average Team Economy: <strong id="avgEconomy">0</strong></li>
-                  <li>Total Equipment Value: <strong id="totalEquipment">0</strong></li>
-                  <li>Next Round Average: <strong id="nextRoundAvg">0</strong></li>
-                </ul>
-              </div>
-              <div class="eco-strategy-block">
-                <h3>Buy strategy</h3>
-                <div class="eco-strategy-btns">
-                  <button type="button" class="eco-strategy-btn" data-strategy="eco">Eco</button>
-                  <button type="button" class="eco-strategy-btn active" data-strategy="halfbuy">Half Buy</button>
-                  <button type="button" class="eco-strategy-btn" data-strategy="fullbuy">Full-Buy</button>
-                </div>
-                <div class="eco-recommend-inline">
-                  <span class="eco-recommend-label">Recommend combination:</span>
-                  <div class="eco-recommend-content" id="recommendContent">
-                    <p class="eco-recommend-placeholder">Choose a strategy</p>
-                    <div class="eco-recommend-items" id="recommendItems"></div>
-                    <span class="eco-recommend-equals">=</span>
-                    <div class="eco-recommend-total" id="recommendTotal"></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-          <div class="kv-sidebar">
-            <div class="kv-panel-card kv-info">
-              <h3>Reading the Eco Board</h3>
-              <p>
-                Enter each player’s <strong>money</strong> and current <strong>loadout</strong> (primary, pistol, armor, grenades), pick <strong>side</strong> (T/CT) and <strong>strategy</strong> (Eco / Half Buy / Full Buy). The recommendation area shows the suggested buy and total cost.
-              </p>
-            </div>
-            <div class="kv-panel-card">
-              <h3>Open full page</h3>
-              <a href="eco_board.html" target="_blank" rel="noopener" class="eco-board-open-link">Open Eco Board in new tab</a>
-            </div>
-            <div class="kv-panel-card eco-prediction-card">
-              <h3>Next round win rate prediction</h3>
-              <p class="eco-prediction-desc">Based on round outcomes and team economy. Solid = actual result (win/loss); hollow = predicted win rate for next round.</p>
-              <div id="ecoWinRateChart" class="eco-prediction-chart" aria-label="Win rate prediction line chart"></div>
-              <div class="eco-prediction-legend">
-                <span class="eco-legend-item eco-legend-actual"><span class="eco-legend-dot eco-legend-dot-solid"></span> Actual</span>
-                <span class="eco-legend-item eco-legend-pred"><span class="eco-legend-dot eco-legend-dot-hollow"></span> Predicted (next)</span>
-              </div>
-            </div>
-          </div>
-        </div>
+
+    <div class="analysis-header">
+      <h2>Round Economy Control Board</h2>
+      <p>Round-by-round buy context, follow-up impact, and player loadout inspection from the BLAST.tv Austin Major 2025 grand final.</p>
+    </div>
+
+    <section class="embedded-analysis-section">
+      <div class="embedded-analysis-frame-wrap">
+        <iframe
+          class="embedded-analysis-frame"
+          id="ecoBoardFrame"
+          src="eco_board.html?embedded=1"
+          title="Economy Storyline dashboard"
+        ></iframe>
       </div>
     </section>
   </div>
@@ -702,7 +656,6 @@
     <p>CSC316 — Five Color Squad</p>
   </footer>
 
-  <script src="js/eco_board.js"></script>
   <script src="js/main.js?v=4"></script>
   <script src="js/dashboard.js?v=4"></script>
 

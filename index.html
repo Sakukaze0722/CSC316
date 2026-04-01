@@ -66,16 +66,16 @@
         Esports is becoming increasingly mainstream and popular, growing from a niche competitive scene into a global form of entertainment followed by players, fans, and organizations around the world.
       </p>
       <p>
-        Our team is especially interested in data related to this field, so we selected two major esports titles, Counter-Strike and Dota 2, and surveyed players worldwide to show how broadly esports popularity is distributed today.
+        Our team is especially interested in data related to this field, so we focused on Counter-Strike and surveyed players worldwide to show how broadly esports popularity is distributed today.
       </p>
       <p>
-        This first part uses two world-map views to highlight the current international reach of these games. In the second part of our visualization, we move from global popularity to match-specific analysis and focus on detailed Counter-Strike gameplay data.
+        This first part uses a world-map view to highlight the current international reach of the game. In the second part of our visualization, we move from global popularity to match-specific analysis and focus on detailed Counter-Strike gameplay data.
       </p>
     </section>
     <div class="vis-block-header">
       <div class="vis-block-title">
         <h2>Esports World Map</h2>
-        <p>Explore regional esports data across Counter-Strike and DOTA 2.</p>
+        <p>Explore regional esports data across Counter-Strike.</p>
       </div>
       <div class="game-toggle">
         <button class="game-btn active" data-game="cs">
@@ -90,15 +90,6 @@
             </svg>
           </span>
           Counter-Strike
-        </button>
-        <button class="game-btn" data-game="dota2">
-          <span class="game-icon game-icon-dota" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2L3 7v6c0 5 4 8.5 9 9.5 5-1 9-4.5 9-9.5V7L12 2z"/>
-              <path d="M12 9v6M9 12h6"/>
-            </svg>
-          </span>
-          DOTA 2
         </button>
       </div>
     </div>
@@ -129,7 +120,6 @@
         <div class="detail-panel-inner">
           <button class="detail-close" id="detailClose">&times;</button>
           <h3 class="detail-title" id="detailCountryName">—</h3>
-          <div class="achievement-track" id="achievementTrack"></div>
           <div class="detail-content" id="detailContent">
             <div class="empty-state">
               <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -147,14 +137,6 @@
       </aside>
     </main>
 
-    <section class="dota-dashboard-section hidden" id="dotaPlayerDashboardSection">
-      <div class="dota-dashboard-section-head">
-        <h3>Dota 2 Player Dashboard</h3>
-        <p>Select a player from the country panel to inspect the cleaned local dataset summary.</p>
-      </div>
-      <div id="dotaPlayerDashboardContent"></div>
-    </section>
-
     <section class="story-section" id="storySection">
       <h2>Story Mode</h2>
       <div class="story-cards" id="storyCards">
@@ -165,14 +147,6 @@
         <article class="story-card" data-game="cs">
           <h3>Regional Playstyle Signatures</h3>
           <p>Teams from different regions tend to show stable preferences in default setups and retake routes.</p>
-        </article>
-        <article class="story-card" data-game="dota2">
-          <h3>Laning Pressure and Resource Allocation</h3>
-          <p>In DOTA 2, the first ten minutes often shape mid-to-late map control and vision initiative.</p>
-        </article>
-        <article class="story-card" data-game="dota2">
-          <h3>Teamfight Trigger Windows</h3>
-          <p>Key cooldown timings and high-ground vision are core variables behind teamfight win rates.</p>
         </article>
       </div>
     </section>

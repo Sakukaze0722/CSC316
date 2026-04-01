@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Economy Control Board - CS2 Grand Final</title>
+  <title>Economy Cause-and-Effect Board - CS2 Grand Final</title>
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/dashboard.css?v=4">
-  <link rel="stylesheet" href="css/eco_board.css?v=4">
+  <link rel="stylesheet" href="css/eco_board.css?v=5">
 </head>
 <body class="dashboard-body eco-board-page" data-theme="light">
   <header class="dashboard-header eco-board-header">
     <div class="header-inner">
       <div class="eco-header-copy">
         <p class="eco-kicker">Visualization 5</p>
-        <h1 class="dashboard-title">Round Economy Control Board</h1>
+        <h1 class="dashboard-title">Economy Cause-and-Effect Board</h1>
         <p class="eco-subtitle" id="ecoSubtitle">
           Vitality vs The MongolZ - BLAST.tv Austin Major 2025 Grand Final
         </p>
@@ -22,79 +22,78 @@
   </header>
 
   <main class="eco-main">
-<section class="eco-command-bar">
+    <section class="eco-storyboard">
+      <div class="eco-storyboard-copy">
+        <p class="eco-storyboard-kicker">Visual Focus</p>
+        <h2>Read the buy, then read the next round.</h2>
+        <p>
+          This board treats economy as a chain of strategic consequences instead of a pile of weapons.
+          Each round shows what both teams bought, how much heavier or lighter the next setup became,
+          and whether the pressure lasted beyond a single exchange.
+        </p>
+      </div>
+    </section>
+
+    <section class="eco-command-bar">
       <nav class="eco-map-tabs" id="ecoMapTabs" aria-label="Map selector" role="tablist">
-        <button class="eco-map-tab active" data-map="de_mirage" role="tab" aria-selected="true">
+        <button class="eco-map-tab active" data-map="de_mirage" role="tab" aria-selected="true" type="button">
           <span class="eco-map-name">Mirage</span>
           <span class="eco-tab-score" id="score-de_mirage"></span>
         </button>
-        <button class="eco-map-tab" data-map="de_dust2" role="tab" aria-selected="false">
+        <button class="eco-map-tab" data-map="de_dust2" role="tab" aria-selected="false" type="button">
           <span class="eco-map-name">Dust II</span>
           <span class="eco-tab-score" id="score-de_dust2"></span>
         </button>
-        <button class="eco-map-tab" data-map="de_inferno" role="tab" aria-selected="false">
+        <button class="eco-map-tab" data-map="de_inferno" role="tab" aria-selected="false" type="button">
           <span class="eco-map-name">Inferno</span>
           <span class="eco-tab-score" id="score-de_inferno"></span>
         </button>
       </nav>
 
-      <div class="eco-command-actions">
-        <button class="eco-control-btn" id="ecoPlayBtn" type="button">Play</button>
-        <label class="eco-speed-label" for="ecoSpeedSelect">
-          Speed
-          <select id="ecoSpeedSelect" class="eco-speed-select">
-            <option value="0.5">0.5x</option>
-            <option value="1" selected>1x</option>
-            <option value="1.5">1.5x</option>
-            <option value="2">2x</option>
-          </select>
-        </label>
+      <div class="eco-command-copy" id="ecoMapMeta">
+        Mirage - The MongolZ won 13-5
       </div>
     </section>
 
-    <section class="eco-round-toolbar">
-      <button class="eco-control-btn is-secondary" id="ecoPrevRoundBtn" type="button">Prev round</button>
-      <div class="eco-round-head">
-        <div class="eco-round-label" id="ecoRoundLabel">Round 1</div>
-        <p class="eco-round-context" id="ecoRoundContext">Loading economy context...</p>
-      </div>
-      <input id="ecoRoundRange" class="eco-round-range" type="range" min="1" max="1" value="1" aria-label="Round range">
-      <button class="eco-control-btn is-secondary" id="ecoNextRoundBtn" type="button">Next round</button>
-    </section>
-
-    <section class="eco-round-strip-panel">
+    <section class="eco-timeline-panel">
       <div class="eco-panel-head">
-        <h2 class="eco-section-title">Round Navigator</h2>
-        <div class="eco-map-meta" id="ecoMapMeta"></div>
-      </div>
-      <div class="eco-tier-legend-strip" id="ecoGlossaryGrid"></div>
-      <div class="eco-round-strip" id="ecoRoundStrip" role="listbox" aria-label="Rounds"></div>
-    </section>
-
-    <section class="eco-scorebar" id="ecoScorebar"></section>
-
-    <section class="eco-loadout-board">
-
-      <div class="eco-loadout-stack">
-        <section class="eco-team-loadout" id="ecoTeamPanelVitality"></section>
-        <div class="eco-eq-gap-wrap">
-          <svg id="ecoEqGapBar" class="eco-eq-gap-bar"></svg>
+        <div>
+          <h2 class="eco-section-title">Round Strategy Timeline</h2>
+          <p class="eco-section-copy">
+            Click a round to lock the impact view. Hover a round to preview the team-level loadout mix
+            without opening full player cards.
+          </p>
+          <p class="eco-section-hint">Hover or click any buy label for a quick plain-language explanation.</p>
         </div>
-        <section class="eco-team-loadout" id="ecoTeamPanelMongolz"></section>
+        <div class="eco-round-current">
+          <span class="eco-round-caption" id="ecoRoundCaption">Selected round</span>
+          <strong class="eco-round-label" id="ecoRoundLabel">Round 1</strong>
+          <span class="eco-round-context" id="ecoRoundContext">Loading round context...</span>
+        </div>
       </div>
+
+      <div class="eco-tier-legend-strip" id="ecoGlossaryGrid"></div>
+      <div class="eco-round-timeline" id="ecoRoundTimeline" role="listbox" aria-label="Round strategy timeline"></div>
     </section>
 
-    <section class="eco-consequence-strip" id="ecoConsequenceStrip"></section>
-
-<section class="eco-score-section">
+    <section class="eco-delta-panel eco-delta-panel-primary">
       <div class="eco-panel-head">
-        <h2 class="eco-section-title">Score Progression</h2>
+        <div>
+          <h2 class="eco-section-title">Economy Delta Chart</h2>
+          <p class="eco-section-copy">
+            Equipment-value change versus the previous round. Positive bars mean a heavier setup than
+            the round before; negative bars mark a downgrade or save.
+          </p>
+        </div>
       </div>
-      <div id="ecoScoreChart" class="eco-score-chart" aria-label="Score progression chart"></div>
+      <div id="ecoDeltaChart" class="eco-delta-chart" aria-label="Economy delta chart"></div>
     </section>
+
+    <section class="eco-context-panel" id="ecoContextPanel"></section>
   </main>
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="js/eco_board.js"></script>
+  <div class="eco-floating-tooltip" id="ecoBuyTooltip" aria-hidden="true"></div>
 </body>
 </html>

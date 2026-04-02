@@ -7,6 +7,7 @@
   const DEFAULT_MAP = 'de_mirage';
   const MAP_LABELS = { de_mirage: 'Mirage', de_dust2: 'Dust II', de_inferno: 'Inferno' };
   const BUY_LABELS = { pistol: 'Pistol', eco: 'Eco', half: 'Half buy', force: 'Force buy', full: 'Full buy' };
+  const BUY_SHORT_LABELS = { pistol: 'Pistol', eco: 'Eco', half: 'Half', force: 'Force', full: 'Full' };
   const BUY_DESCRIPTIONS = {
     pistol: 'Opening round, both teams start from equal money.',
     eco: 'Save now, spend harder on the next fight.',
@@ -209,7 +210,7 @@
       const cardNote = getTimelineNote(mapData, round, aftershock);
       return `
         <button
-          class="eco-round-card${aftershock.impacted.length ? ' has-aftershock' : ''}"
+          class="eco-round-card eco-round-card-compact${aftershock.impacted.length ? ' has-aftershock' : ''}"
           data-round="${round.round}"
           data-winner="${round.winner}"
           type="button"
@@ -218,20 +219,9 @@
         >
           <div class="eco-round-card-top">
             <span class="eco-round-card-index">R${round.round}</span>
-            <span class="eco-round-card-winner eco-round-card-winner-${round.winner === 'vitality' ? 'v' : 'm'}">${getTeamLabel(round.winner)}</span>
+            <span class="eco-round-card-winner eco-round-card-winner-${round.winner === 'vitality' ? 'v' : 'm'}">${TEAM_META[round.winner].short}</span>
           </div>
-          <div class="eco-round-buy-stack">
-          <div class="eco-round-buy-line">
-            <span class="eco-round-team-tag">${TEAM_META.vitality.short}</span>
-              ${renderBuyTierBadge(round.vitality.buy_tier)}
-          </div>
-          <div class="eco-round-buy-line">
-            <span class="eco-round-team-tag">${TEAM_META.mongolz.short}</span>
-              ${renderBuyTierBadge(round.mongolz.buy_tier)}
-          </div>
-        </div>
           <div class="eco-round-card-bottom">
-            <span>${cardNote.label}</span>
             <span>${cardNote.value}</span>
           </div>
         </button>
@@ -246,7 +236,6 @@
       button.addEventListener('focus', () => setHoverRound(roundNumber));
       button.addEventListener('blur', clearHoverRound);
     });
-    bindBuyTierTooltips(dom.timeline);
   }
 
   function syncTimelineSelection() {
@@ -328,73 +317,89 @@
         <p class="eco-impact-overline">${isPreviewing ? 'Hover impact' : 'Round impact'}</p>
         <h3>${buildImpactHeadline(round, transition)}</h3>
         <p class="eco-impact-copy">${transition.impactLabel}</p>
-        <div class="eco-impact-chip-row">
-          <span class="eco-impact-chip is-winner">Winner: ${getTeamLabel(round.winner)}</span>
-          <span class="eco-impact-chip">${transition.statusLabel}</span>
-          <span class="eco-impact-chip">${impacted.length ? `Aftershock: ${impacted.length} round${impacted.length > 1 ? 's' : ''}` : 'Aftershock: contained in one round'}</span>
-        </div>
+      <div class="eco-impact-chip-row">
+        <span class="eco-impact-chip is-winner">Winner: ${getTeamLabel(round.winner)}</span>
+        <span class="eco-impact-chip">${transition.statusLabel}</span>
+        <span class="eco-impact-chip">${impacted.length ? `Affected rounds: ${impacted.length}` : 'Effect stays in the next round'}</span>
+      </div>
         <p class="eco-impact-footnote">${isPreviewing ? 'Previewing a hovered round. Click a round or a bar to pin it.' : 'Click a round or a bar to lock this economy story in place.'}</p>
       </div>
     `;
   }
 
   function renderDeltaChart(mapData, focusRound) {
-    const width = Math.max(dom.deltaChart.clientWidth || 960, 320);
-    const height = 420;
-    const margin = { top: 28, right: 24, bottom: 42, left: 80 };
+    const priorScrollLeft = dom.deltaChart ? dom.deltaChart.scrollLeft : 0;
+    const width = Math.max(dom.deltaChart.clientWidth || 960, (mapData.rounds.length * 86) + 160);
+    const height = 520;
+    const margin = { top: 24, right: 24, bottom: 20, left: 118 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
-    const laneGap = 54;
-    const laneHeight = (innerHeight - laneGap) / 2;
-    const barBand = d3.scaleBand().domain(mapData.rounds.map((round) => String(round.round))).range([0, innerWidth]).padding(0.22);
+    const headerHeight = 110;
+    const laneGap = 82;
+    const laneHeight = (innerHeight - headerHeight - laneGap) / 2;
+    const vitalityOffsetY = headerHeight;
+    const mongolzOffsetY = headerHeight + laneHeight + laneGap;
+    const winnerY = vitalityOffsetY + laneHeight + (laneGap / 2);
+    const barBand = d3.scaleBand()
+      .domain(mapData.rounds.map((round) => String(round.round)))
+      .range([0, innerWidth])
+      .paddingInner(0.18)
+      .paddingOuter(0.16);
     const deltaRows = buildDeltaRows(mapData);
     const maxAbs = Math.max(1000, d3.max(deltaRows.flatMap((row) => ['vitality', 'mongolz'].map((team) => Math.abs(row[team].delta || 0)))) || 1000);
-    const barScale = d3.scaleLinear().domain([0, maxAbs]).range([0, laneHeight / 2 - 20]);
+    const barScale = d3.scaleSqrt().domain([0, maxAbs]).range([0, laneHeight / 2 - 6]);
     const svg = d3.select(dom.deltaChart).html('').append('svg').attr('width', width).attr('height', height);
     const root = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
     const aftershock = state.analytics.aftershocks[focusRound];
     const selectedAftershock = new Set(aftershock.impacted.map((item) => item.round));
     const isPreviewing = Boolean(state.hoverRound && state.hoverRound !== state.currentRound);
 
-    renderDeltaAftershockBand(root, barBand, aftershock.impacted, innerHeight);
+    renderDeltaAftershockBand(root, barBand, aftershock.impacted, innerHeight, headerHeight);
+    renderDeltaColumnHighlights(root, deltaRows, barBand, innerWidth, innerHeight, selectedAftershock, focusRound);
+    renderDeltaColumnHeaders(root, deltaRows, barBand, headerHeight, focusRound);
     renderDeltaFocusLine(root, barBand, focusRound, innerHeight, isPreviewing);
-    renderDeltaLane(root, deltaRows, 'vitality', 0, laneHeight, barBand, barScale, selectedAftershock, focusRound);
-    renderDeltaLane(root, deltaRows, 'mongolz', laneHeight + laneGap, laneHeight, barBand, barScale, selectedAftershock, focusRound);
-
-    root.append('g')
-      .attr('class', 'eco-delta-axis')
-      .attr('transform', `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(barBand).tickSizeOuter(0));
-
+    renderDeltaLane(root, deltaRows, 'vitality', vitalityOffsetY, laneHeight, barBand, barScale, selectedAftershock, focusRound);
+    renderDeltaLane(root, deltaRows, 'mongolz', mongolzOffsetY, laneHeight, barBand, barScale, selectedAftershock, focusRound);
+    renderDeltaWinnerMarkers(root, deltaRows, barBand, winnerY, focusRound);
     renderDeltaInteractionLayer(root, deltaRows, barBand, innerWidth, innerHeight);
+    bindBuyTierTooltips(dom.deltaChart);
     svg.on('mouseleave', clearHoverRound);
+    window.requestAnimationFrame(() => {
+      if (dom.deltaChart) dom.deltaChart.scrollLeft = priorScrollLeft;
+    });
   }
 
   function renderDeltaLane(root, rows, teamKey, offsetY, laneHeight, barBand, barScale, impactedSet, focusRound) {
     const lane = root.append('g').attr('transform', `translate(0,${offsetY})`);
     const baselineY = laneHeight / 2;
+    const labelX = -18;
     lane.append('line').attr('class', 'eco-delta-baseline').attr('x1', 0).attr('x2', barBand.range()[1]).attr('y1', baselineY).attr('y2', baselineY);
-    lane.append('text').attr('class', 'eco-lane-title').attr('x', -56).attr('y', baselineY - 12).text(getTeamLabel(teamKey));
-    lane.append('text').attr('class', 'eco-lane-copy').attr('x', -56).attr('y', baselineY + 2).text('heavier');
-    lane.append('text').attr('class', 'eco-lane-copy').attr('x', -56).attr('y', baselineY + 40).text('lighter');
+    lane.append('text').attr('class', 'eco-lane-title').attr('x', labelX).attr('y', baselineY - 12).text(getTeamLabel(teamKey));
+    lane.append('text').attr('class', 'eco-lane-copy').attr('x', labelX).attr('y', baselineY + 2).text('heavier');
+    lane.append('text').attr('class', 'eco-lane-copy').attr('x', labelX).attr('y', baselineY + 40).text('lighter');
 
     rows.forEach((row) => {
       const entry = row[teamKey];
       const x = barBand(String(row.round));
       if (x == null) return;
+      const bandwidth = barBand.bandwidth();
+      const barWidth = Math.max(16, Math.min(bandwidth * 0.72, bandwidth - 8));
+      const barX = x + ((bandwidth - barWidth) / 2);
+      const isSelected = row.round === state.currentRound;
+      const isPreview = row.round === state.hoverRound && state.hoverRound !== state.currentRound;
       if (entry.phase !== 'normal') {
-        const isSelected = row.round === state.currentRound;
-        const isPreview = row.round === state.hoverRound && state.hoverRound !== state.currentRound;
+        const markerWidth = Math.max(28, Math.min(bandwidth * 0.86, bandwidth - 2));
+        const markerX = x + ((bandwidth - markerWidth) / 2);
         lane.append('rect')
           .attr('class', `eco-delta-reset-marker${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}${row.round === focusRound && impactedSet.size ? ' is-source' : ''}${impactedSet.has(row.round) ? ' is-impacted' : ''}`)
-          .attr('x', x)
-          .attr('y', baselineY - 10)
-          .attr('width', barBand.bandwidth())
-          .attr('height', 20)
+          .attr('x', markerX)
+          .attr('y', baselineY - 11)
+          .attr('width', markerWidth)
+          .attr('height', 22)
           .attr('rx', 10);
         lane.append('text')
           .attr('class', 'eco-delta-reset-text')
-          .attr('x', x + barBand.bandwidth() / 2)
+          .attr('x', markerX + markerWidth / 2)
           .attr('y', baselineY + 3)
           .attr('text-anchor', 'middle')
           .text(entry.phase === 'half_reset' ? 'RESET' : 'OPEN');
@@ -404,15 +409,18 @@
       const magnitude = barScale(Math.abs(entry.delta));
       const isPositive = entry.delta >= 0;
       const y = isPositive ? baselineY - magnitude : baselineY;
-      const isSelected = row.round === state.currentRound;
-      const isPreview = row.round === state.hoverRound && state.hoverRound !== state.currentRound;
+      const height = Math.max(10, magnitude);
       lane.append('rect')
-        .attr('class', `eco-delta-bar${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}${row.round === focusRound && impactedSet.size ? ' is-source' : ''}${impactedSet.has(row.round) ? ' is-impacted' : ''}`)
-        .attr('x', x)
+        .attr('class', `eco-delta-bar ${getDeltaClass(entry.delta, entry.phase)}${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}${row.round === focusRound && impactedSet.size ? ' is-source' : ''}${impactedSet.has(row.round) ? ' is-impacted' : ''}`)
+        .attr('x', barX)
         .attr('y', y)
-        .attr('width', barBand.bandwidth())
-        .attr('height', Math.max(4, magnitude))
-        .attr('fill', getTierColor(entry.buyTier, teamKey));
+        .attr('width', barWidth)
+        .attr('height', height)
+        .attr('fill', getTierColor(entry.buyTier));
+
+      if (row.round === focusRound) {
+        renderDeltaValueLabel(lane, barX, y, height, baselineY, barWidth, entry.delta, isPositive);
+      }
     });
   }
 
@@ -421,9 +429,133 @@
       const prev = index > 0 ? mapData.rounds[index - 1] : null;
       return {
         round: round.round,
+        winner: round.winner,
+        half: round.half,
         vitality: buildDeltaEntry(round.vitality, prev ? prev.vitality : null, prev && prev.half === round.half ? 'normal' : (prev ? 'half_reset' : 'map_start')),
         mongolz: buildDeltaEntry(round.mongolz, prev ? prev.mongolz : null, prev && prev.half === round.half ? 'normal' : (prev ? 'half_reset' : 'map_start'))
       };
+    });
+  }
+
+  function renderDeltaColumnHighlights(root, rows, barBand, innerWidth, innerHeight, impactedSet, focusRound) {
+    const layer = root.append('g').attr('class', 'eco-delta-column-layer');
+    const cellWidth = barBand.step();
+    const gapHalf = (cellWidth - barBand.bandwidth()) / 2;
+    rows.forEach((row) => {
+      const x = barBand(String(row.round));
+      if (x == null) return;
+      const columnLeft = Math.max(x - gapHalf, 0);
+      const columnWidth = Math.min(cellWidth, innerWidth - columnLeft);
+      const isSelected = row.round === state.currentRound;
+      const isPreview = row.round === state.hoverRound && state.hoverRound !== state.currentRound;
+      if (isSelected || isPreview) {
+        layer.append('rect')
+          .attr('class', `eco-delta-column-highlight${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}`)
+          .attr('x', columnLeft + 2)
+          .attr('y', 4)
+          .attr('width', Math.max(columnWidth - 4, 0))
+          .attr('height', innerHeight - 8)
+          .attr('rx', 20);
+      }
+      const stripeWidth = Math.max(16, Math.min(barBand.bandwidth() * 0.34, 24));
+      layer.append('rect')
+        .attr('class', `eco-delta-winner-stripe eco-delta-winner-stripe-${row.winner}${row.round === focusRound && impactedSet.size ? ' is-source' : ''}${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}`)
+        .attr('x', x + (barBand.bandwidth() / 2) - (stripeWidth / 2))
+        .attr('y', 6)
+        .attr('width', stripeWidth)
+        .attr('height', innerHeight - 12)
+        .attr('rx', stripeWidth / 2);
+    });
+  }
+
+  function renderDeltaColumnHeaders(root, rows, barBand, headerHeight, focusRound) {
+    const header = root.append('g').attr('class', 'eco-delta-header-layer');
+    header.append('line')
+      .attr('class', 'eco-delta-header-divider')
+      .attr('x1', 0)
+      .attr('x2', barBand.range()[1])
+      .attr('y1', headerHeight - 10)
+      .attr('y2', headerHeight - 10);
+
+    rows.forEach((row) => {
+      const x = barBand(String(row.round));
+      if (x == null) return;
+      const centerX = x + (barBand.bandwidth() / 2);
+      const isSelected = row.round === state.currentRound;
+      const isPreview = row.round === state.hoverRound && state.hoverRound !== state.currentRound;
+      header.append('text')
+        .attr('class', `eco-chart-round-label${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}`)
+        .attr('x', centerX)
+        .attr('y', 17)
+        .attr('text-anchor', 'middle')
+        .text(`R${row.round}`);
+
+      renderChartBuyTag(header, centerX, 28, 'vitality', row.vitality.buyTier);
+      renderChartBuyTag(header, centerX, 54, 'mongolz', row.mongolz.buyTier);
+
+      if (row.round === focusRound) {
+        header.append('text')
+          .attr('class', 'eco-chart-focus-copy')
+          .attr('x', centerX)
+          .attr('y', 94)
+          .attr('text-anchor', 'middle')
+          .text(row.half === 1 ? '1st half' : '2nd half');
+      }
+    });
+  }
+
+  function renderChartBuyTag(header, centerX, topY, teamKey, buyTier) {
+    const label = `${TEAM_META[teamKey].short} ${BUY_SHORT_LABELS[buyTier] || formatBuyTier(buyTier)}`;
+    const tagWidth = Math.max(56, Math.min(74, (label.length * 6.1) + 14));
+    const tagHeight = 20;
+    const left = centerX - (tagWidth / 2);
+    const style = getTierTagStyle(buyTier);
+    const tag = header.append('g').attr('transform', `translate(${left},${topY})`);
+    tag.append('rect')
+      .attr('class', `eco-chart-buy-tag eco-chart-buy-tag-${buyTier}`)
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('width', tagWidth)
+      .attr('height', tagHeight)
+      .attr('rx', 10)
+      .attr('fill', style.fill)
+      .attr('stroke', style.stroke)
+      .attr('data-buy-tooltip', getBuyTooltip(buyTier))
+      .attr('aria-label', `${label}: ${getBuyTooltip(buyTier)}`);
+    tag.append('text')
+      .attr('class', 'eco-chart-buy-tag-text')
+      .attr('x', tagWidth / 2)
+      .attr('y', 13)
+      .attr('text-anchor', 'middle')
+      .attr('fill', style.text)
+      .text(label);
+  }
+
+  function renderDeltaWinnerMarkers(root, rows, barBand, winnerY, focusRound) {
+    const layer = root.append('g').attr('class', 'eco-delta-winner-layer');
+    rows.forEach((row) => {
+      const x = barBand(String(row.round));
+      if (x == null) return;
+      const label = row.winner === 'vitality' ? 'V won' : 'TMZ won';
+      const width = Math.max(34, (label.length * 5.9) + 14);
+      const height = 18;
+      const left = x + (barBand.bandwidth() / 2) - (width / 2);
+      const top = winnerY - (height / 2);
+      const isSelected = row.round === state.currentRound;
+      const isPreview = row.round === state.hoverRound && state.hoverRound !== state.currentRound;
+      layer.append('rect')
+        .attr('class', `eco-delta-winner-pill eco-delta-winner-pill-${row.winner}${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}`)
+        .attr('x', left)
+        .attr('y', top)
+        .attr('width', width)
+        .attr('height', height)
+        .attr('rx', 9);
+      layer.append('text')
+        .attr('class', `eco-delta-winner-pill-text eco-delta-winner-pill-text-${row.winner}${row.round === focusRound ? ' is-focus' : ''}`)
+        .attr('x', left + (width / 2))
+        .attr('y', top + 12)
+        .attr('text-anchor', 'middle')
+        .text(label);
     });
   }
 
@@ -703,7 +835,7 @@
 
   function bindBuyTierTooltips(scope) {
     if (!scope || !scope.querySelectorAll) return;
-    scope.querySelectorAll('.eco-buy-tier-badge[data-buy-tooltip]').forEach((badge) => {
+    scope.querySelectorAll('[data-buy-tooltip]').forEach((badge) => {
       if (badge.dataset.tooltipBound === '1') return;
       badge.dataset.tooltipBound = '1';
       badge.addEventListener('mouseenter', () => {
@@ -784,7 +916,7 @@
 
   function handleDocumentClick(event) {
     if (!state.pinnedTooltipTarget) return;
-    if (event.target instanceof Element && event.target.closest('.eco-buy-tier-badge')) return;
+    if (event.target instanceof Element && event.target.closest('[data-buy-tooltip]')) return;
     hideBuyTooltip();
   }
 
@@ -860,7 +992,7 @@
     return parts.join(' / ');
   }
 
-  function renderDeltaAftershockBand(root, barBand, impactedRounds, innerHeight) {
+  function renderDeltaAftershockBand(root, barBand, impactedRounds, innerHeight, headerHeight) {
     if (!impactedRounds.length) return;
     const firstX = barBand(String(impactedRounds[0].round));
     const lastX = barBand(String(impactedRounds[impactedRounds.length - 1].round));
@@ -871,10 +1003,26 @@
     root.append('rect')
       .attr('class', `eco-aftershock-band${state.hoverRound && state.hoverRound !== state.currentRound ? ' is-preview' : ''}`)
       .attr('x', left)
-      .attr('y', 8)
+      .attr('y', 6)
       .attr('width', Math.max(width, 0))
-      .attr('height', innerHeight - 24)
+      .attr('height', innerHeight - 12)
       .attr('rx', 18);
+    const labelText = width < 106 ? 'Affected' : 'Affected rounds';
+    const pillWidth = labelText === 'Affected' ? 70 : 120;
+    const pillX = left + Math.max(8, Math.min(14, width - pillWidth - 8));
+    const pillY = headerHeight - 26;
+    root.append('rect')
+      .attr('class', 'eco-aftershock-band-pill')
+      .attr('x', pillX)
+      .attr('y', pillY)
+      .attr('width', Math.min(pillWidth, Math.max(width - 10, 56)))
+      .attr('height', 18)
+      .attr('rx', 9);
+    root.append('text')
+      .attr('class', 'eco-aftershock-band-label')
+      .attr('x', pillX + 9)
+      .attr('y', pillY + 12)
+      .text(labelText);
   }
 
   function renderDeltaFocusLine(root, barBand, focusRound, innerHeight, isPreviewing) {
@@ -926,12 +1074,36 @@
     return 'is-flat';
   }
 
-  function getTierColor(tier, teamKey) {
+  function renderDeltaValueLabel(lane, x, y, height, baselineY, bandwidth, delta, isPositive) {
+    const labelY = isPositive ? Math.max(y - 8, 10) : Math.min(y + height + 14, baselineY + 54);
+    lane.append('text')
+      .attr('class', 'eco-delta-value-label')
+      .attr('x', x + bandwidth / 2)
+      .attr('y', labelY)
+      .attr('text-anchor', 'middle')
+      .text(formatCompactSignedMoney(delta));
+  }
+
+  function getTierColor(tier) {
     const palette = {
-      vitality: { pistol: '#94a3b8', eco: '#f59e0b', half: '#60a5fa', force: '#3b82f6', full: '#1d4ed8' },
-      mongolz: { pistol: '#94a3b8', eco: '#fb923c', half: '#f87171', force: '#ef4444', full: '#b91c1c' }
+      pistol: '#94a3b8',
+      eco: '#f59e0b',
+      half: '#3b82f6',
+      force: '#8b5cf6',
+      full: '#22c55e'
     };
-    return palette[teamKey][tier] || '#94a3b8';
+    return palette[tier] || '#94a3b8';
+  }
+
+  function getTierTagStyle(tier) {
+    const palette = {
+      pistol: { fill: 'rgba(148, 163, 184, 0.16)', stroke: 'rgba(100, 116, 139, 0.24)', text: '#64748b' },
+      eco: { fill: 'rgba(245, 158, 11, 0.16)', stroke: 'rgba(217, 119, 6, 0.24)', text: '#b45309' },
+      half: { fill: 'rgba(59, 130, 246, 0.16)', stroke: 'rgba(37, 99, 235, 0.24)', text: '#1d4ed8' },
+      force: { fill: 'rgba(139, 92, 246, 0.16)', stroke: 'rgba(124, 58, 237, 0.24)', text: '#6d28d9' },
+      full: { fill: 'rgba(34, 197, 94, 0.16)', stroke: 'rgba(22, 163, 74, 0.24)', text: '#15803d' }
+    };
+    return palette[tier] || palette.pistol;
   }
 
   function getRoundPlayers(mapKey, roundNumber, teamKey) {
@@ -1027,6 +1199,17 @@
     const amount = Number(value || 0);
     const sign = amount > 0 ? '+' : amount < 0 ? '-' : '+';
     return `${sign}${Math.abs(amount).toLocaleString()}`;
+  }
+
+  function formatCompactSignedMoney(value) {
+    const amount = Number(value || 0);
+    const sign = amount > 0 ? '+' : amount < 0 ? '-' : '+';
+    const abs = Math.abs(amount);
+    if (abs >= 1000) {
+      const rounded = Math.round((abs / 1000) * 10) / 10;
+      return `${sign}$${rounded}k`;
+    }
+    return `${sign}$${abs}`;
   }
 
   function formatBuyTier(tier) {

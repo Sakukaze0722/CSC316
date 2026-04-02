@@ -58,10 +58,10 @@
     <section class="eco-timeline-panel">
       <div class="eco-panel-head">
         <div>
-          <h2 class="eco-section-title">Round Strategy Timeline</h2>
+          <h2 class="eco-section-title">Round Navigator</h2>
           <p class="eco-section-copy">
-            Click a round to lock the impact view. Hover a round to preview the strategy shift before
-            reading the chart in detail.
+            Use this compact row to jump between rounds. The main story now lives in the chart below,
+            where each column combines winner, buy choices, and economy swing.
           </p>
           <p class="eco-section-hint">Hover or click any buy label for a quick plain-language explanation.</p>
         </div>
@@ -79,12 +79,23 @@
     <section class="eco-delta-panel eco-delta-panel-primary">
       <div class="eco-panel-head">
         <div>
-          <h2 class="eco-section-title">Economy Delta Chart</h2>
+          <h2 class="eco-section-title">Integrated Round Economy Story Chart</h2>
           <p class="eco-section-copy">
-            Equipment-value change versus the previous round. Positive bars mean a heavier setup than
-            the round before; negative bars mark a downgrade or save.
+            Read each column as one round: who won, what both teams bought, and how much heavier or
+            lighter the next economy became versus the previous round.
           </p>
-          <p class="eco-section-hint">Hover or click a bar to preview and pin that round directly from the chart.</p>
+          <p class="eco-section-hint">Hover or click any round column to preview and pin that round directly from the chart.</p>
+          <div class="eco-chart-legend" aria-label="Chart color legend">
+            <span class="eco-chart-legend-copy">Bar color shows buy type, not team.</span>
+            <span class="eco-chart-legend-item"><span class="eco-chart-swatch eco-chart-swatch-pistol" aria-hidden="true"></span><span>Pistol</span></span>
+            <span class="eco-chart-legend-item"><span class="eco-chart-swatch eco-chart-swatch-eco" aria-hidden="true"></span><span>Eco</span></span>
+            <span class="eco-chart-legend-item"><span class="eco-chart-swatch eco-chart-swatch-half" aria-hidden="true"></span><span>Half buy</span></span>
+            <span class="eco-chart-legend-item"><span class="eco-chart-swatch eco-chart-swatch-force" aria-hidden="true"></span><span>Force buy</span></span>
+            <span class="eco-chart-legend-item"><span class="eco-chart-swatch eco-chart-swatch-full" aria-hidden="true"></span><span>Full buy</span></span>
+            <span class="eco-chart-legend-item"><span class="eco-chart-swatch eco-chart-swatch-winner" aria-hidden="true"></span><span>Blue/red stripe = round winner</span></span>
+            <span class="eco-chart-legend-item"><span class="eco-chart-swatch eco-chart-swatch-affected" aria-hidden="true"></span><span>Shaded band = affected rounds</span></span>
+          </div>
+          <p class="eco-aftershock-explain"><span class="eco-aftershock-swatch" aria-hidden="true"></span><span>The shaded band marks later rounds still influenced by the selected round, usually because one team is pushed onto a weaker follow-up buy.</span></p>
         </div>
       </div>
       <div id="ecoDeltaChart" class="eco-delta-chart" aria-label="Economy delta chart"></div>

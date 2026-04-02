@@ -204,7 +204,7 @@
   }
 
   function renderTimeline(mapData) {
-    dom.timeline.innerHTML = mapData.rounds.map((round) => {
+    dom.timeline.innerHTML = `<div class="eco-timeline-aftershock-band" aria-hidden="true"></div>${mapData.rounds.map((round) => {
       const aftershock = state.analytics.aftershocks[round.round];
       const cardNote = getTimelineNote(mapData, round, aftershock);
       return `
@@ -236,7 +236,7 @@
           </div>
         </button>
       `;
-    }).join('');
+    }).join('')}`;
 
     dom.timeline.querySelectorAll('.eco-round-card').forEach((button) => {
       const roundNumber = Number(button.dataset.round);
@@ -260,8 +260,10 @@
       button.classList.toggle('is-selected', isSelected);
       button.classList.toggle('is-preview', Boolean(isPreview));
       button.classList.toggle('is-impacted', impactedRounds.has(roundNumber));
+      button.classList.toggle('is-aftershock-source', roundNumber === focusRound && impactedRounds.size > 0);
       button.setAttribute('aria-selected', String(isSelected));
     });
+    syncTimelineAftershockBand(aftershock);
   }
 
   function renderContextPanel(transition, vitalitySummary, mongolzSummary, isPreviewing) {
@@ -280,40 +282,41 @@
     const teamTransition = transition.teams[teamKey];
     const isVitality = teamKey === 'vitality';
     const prevText = renderPhaseValue(teamTransition.prevEqDelta, teamTransition.prevPhase, 'eq');
-    const nextText = renderPhaseValue(teamTransition.nextEqDelta, teamTransition.nextPhase, 'eq');
     return `
+      <div class="eco-impact-team-card-shell eco-team-impact-card ${isVitality ? 'eco-team-impact-card-v' : 'eco-team-impact-card-m'}">
       <div class="eco-impact-team-head">
         <span class="eco-team-dot ${isVitality ? 'eco-team-dot-v' : 'eco-team-dot-m'}"></span>
         <h3 class="eco-team-impact-title">${getTeamLabel(teamKey)}</h3>
         <span class="eco-side-badge ${teamTransition.side === 'T' ? 'eco-side-t' : 'eco-side-ct'}">${teamTransition.side === 'T' ? 'Attack' : 'Defend'}</span>
       </div>
-      <div class="eco-impact-chip-row">
+      <div class="eco-impact-path-row">
         ${renderBuyTierBadge(teamTransition.currentTier)}
-        ${renderNextTierPill(teamTransition)}
+        <span class="eco-impact-path-arrow" aria-hidden="true">-></span>
+        ${renderImpactTargetBadge(teamTransition)}
       </div>
-      <div class="eco-impact-stat-grid">
+      <div class="eco-impact-stat-grid eco-impact-stat-grid-compact">
         <div class="eco-impact-stat">
-          <span class="eco-impact-stat-label">Money now</span>
-          <span class="eco-impact-stat-value">${formatMoney(teamTransition.money)}</span>
-        </div>
-        <div class="eco-impact-stat">
-          <span class="eco-impact-stat-label">Equipment now</span>
-          <span class="eco-impact-stat-value">${formatMoney(teamTransition.eqValue)}</span>
+          <span class="eco-impact-stat-label">This round</span>
+          <span class="eco-impact-stat-value">${formatBuyTier(teamTransition.currentTier)}</span>
+          <span class="eco-impact-stat-subcopy">Eq ${formatMoney(teamTransition.eqValue)}</span>
         </div>
         <div class="eco-impact-stat">
           <span class="eco-impact-stat-label">Vs previous round</span>
           <span class="eco-impact-stat-value ${getDeltaClass(teamTransition.prevEqDelta, teamTransition.prevPhase)}">${prevText}</span>
+          <span class="eco-impact-stat-subcopy">${buildPhaseSubcopy(teamTransition.prevPhase, 'previous')}</span>
         </div>
         <div class="eco-impact-stat">
-          <span class="eco-impact-stat-label">Next-round shift</span>
-          <span class="eco-impact-stat-value ${getDeltaClass(teamTransition.nextEqDelta, teamTransition.nextPhase)}">${nextText}</span>
+          <span class="eco-impact-stat-label">Next round</span>
+          <span class="eco-impact-stat-value ${getDeltaClass(teamTransition.nextEqDelta, teamTransition.nextPhase)}">${getNextStateLabel(teamTransition)}</span>
+          <span class="eco-impact-stat-subcopy">${buildNextStateSubcopy(teamTransition)}</span>
         </div>
       </div>
-      <div class="eco-team-compare-metrics">
-        ${summary.metrics.slice(0, 5).map((metric) => `<span class="eco-preview-metric">${metric}</span>`).join('')}
+      <div class="eco-impact-loadout">
+        <p class="eco-impact-loadout-label">Loadout mix</p>
+        <p class="eco-impact-loadout-value">${summary.compactMix}</p>
+        <p class="eco-impact-note">${summary.supportLine}</p>
       </div>
-      <p class="eco-impact-note"><strong>Snapshot:</strong> ${summary.standouts}</p>
-      <p class="eco-impact-note">${teamTransition.note}</p>
+      </div>
     `;
   }
 
@@ -321,14 +324,16 @@
     const round = transition.round;
     const impacted = transition.aftershockRounds;
     return `
-      <p class="eco-impact-overline">${isPreviewing ? 'Hover impact' : 'Round impact'}</p>
-      <h3>${buildImpactHeadline(round, transition)}</h3>
-      <p class="eco-impact-copy">${transition.impactLabel}</p>
-      <div class="eco-impact-chip-row">
-        <span class="eco-impact-chip is-winner">Winner: ${getTeamLabel(round.winner)}</span>
-        <span class="eco-impact-chip">${transition.statusLabel}</span>
-        <span class="eco-impact-chip">${impacted.length ? `Aftershock: ${impacted.length} round${impacted.length > 1 ? 's' : ''}` : 'Aftershock: contained in one round'}</span>
-        <span class="eco-impact-chip">${isPreviewing ? 'Hovering to preview' : 'Click a round to pin'}</span>
+      <div class="eco-impact-center">
+        <p class="eco-impact-overline">${isPreviewing ? 'Hover impact' : 'Round impact'}</p>
+        <h3>${buildImpactHeadline(round, transition)}</h3>
+        <p class="eco-impact-copy">${transition.impactLabel}</p>
+        <div class="eco-impact-chip-row">
+          <span class="eco-impact-chip is-winner">Winner: ${getTeamLabel(round.winner)}</span>
+          <span class="eco-impact-chip">${transition.statusLabel}</span>
+          <span class="eco-impact-chip">${impacted.length ? `Aftershock: ${impacted.length} round${impacted.length > 1 ? 's' : ''}` : 'Aftershock: contained in one round'}</span>
+        </div>
+        <p class="eco-impact-footnote">${isPreviewing ? 'Previewing a hovered round. Click a round or a bar to pin it.' : 'Click a round or a bar to lock this economy story in place.'}</p>
       </div>
     `;
   }
@@ -347,8 +352,12 @@
     const barScale = d3.scaleLinear().domain([0, maxAbs]).range([0, laneHeight / 2 - 20]);
     const svg = d3.select(dom.deltaChart).html('').append('svg').attr('width', width).attr('height', height);
     const root = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-    const selectedAftershock = new Set(state.analytics.aftershocks[focusRound].impacted.map((item) => item.round));
+    const aftershock = state.analytics.aftershocks[focusRound];
+    const selectedAftershock = new Set(aftershock.impacted.map((item) => item.round));
+    const isPreviewing = Boolean(state.hoverRound && state.hoverRound !== state.currentRound);
 
+    renderDeltaAftershockBand(root, barBand, aftershock.impacted, innerHeight);
+    renderDeltaFocusLine(root, barBand, focusRound, innerHeight, isPreviewing);
     renderDeltaLane(root, deltaRows, 'vitality', 0, laneHeight, barBand, barScale, selectedAftershock, focusRound);
     renderDeltaLane(root, deltaRows, 'mongolz', laneHeight + laneGap, laneHeight, barBand, barScale, selectedAftershock, focusRound);
 
@@ -356,6 +365,9 @@
       .attr('class', 'eco-delta-axis')
       .attr('transform', `translate(0,${innerHeight})`)
       .call(d3.axisBottom(barBand).tickSizeOuter(0));
+
+    renderDeltaInteractionLayer(root, deltaRows, barBand, innerWidth, innerHeight);
+    svg.on('mouseleave', clearHoverRound);
   }
 
   function renderDeltaLane(root, rows, teamKey, offsetY, laneHeight, barBand, barScale, impactedSet, focusRound) {
@@ -371,8 +383,10 @@
       const x = barBand(String(row.round));
       if (x == null) return;
       if (entry.phase !== 'normal') {
+        const isSelected = row.round === state.currentRound;
+        const isPreview = row.round === state.hoverRound && state.hoverRound !== state.currentRound;
         lane.append('rect')
-          .attr('class', `eco-delta-reset-marker${row.round === focusRound ? ' is-selected' : ''}${impactedSet.has(row.round) ? ' is-impacted' : ''}`)
+          .attr('class', `eco-delta-reset-marker${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}${row.round === focusRound && impactedSet.size ? ' is-source' : ''}${impactedSet.has(row.round) ? ' is-impacted' : ''}`)
           .attr('x', x)
           .attr('y', baselineY - 10)
           .attr('width', barBand.bandwidth())
@@ -390,8 +404,10 @@
       const magnitude = barScale(Math.abs(entry.delta));
       const isPositive = entry.delta >= 0;
       const y = isPositive ? baselineY - magnitude : baselineY;
+      const isSelected = row.round === state.currentRound;
+      const isPreview = row.round === state.hoverRound && state.hoverRound !== state.currentRound;
       lane.append('rect')
-        .attr('class', `eco-delta-bar${row.round === focusRound ? ' is-selected' : ''}${impactedSet.has(row.round) ? ' is-impacted' : ''}`)
+        .attr('class', `eco-delta-bar${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}${row.round === focusRound && impactedSet.size ? ' is-source' : ''}${impactedSet.has(row.round) ? ' is-impacted' : ''}`)
         .attr('x', x)
         .attr('y', y)
         .attr('width', barBand.bandwidth())
@@ -453,11 +469,8 @@
       currentTier: current.buy_tier,
       nextTier: following ? following.buy_tier : null,
       side: current.side,
-      money: current.money || 0,
       eqValue: current.eq_value || 0,
-      prevMoneyDelta: previous ? (current.money || 0) - (previous.money || 0) : null,
       prevEqDelta: previous ? (current.eq_value || 0) - (previous.eq_value || 0) : null,
-      nextMoneyDelta: following ? (following.money || 0) - (current.money || 0) : null,
       nextEqDelta: following ? (following.eq_value || 0) - (current.eq_value || 0) : null,
       prevPhase,
       nextPhase,
@@ -476,12 +489,15 @@
   }
 
   function buildImpactHeadline(round, transition) {
-    if (!transition.next) return `${getTeamLabel(round.winner)} close the map, so the story stops at the final result.`;
-    if (transition.teams.vitality.nextPhase === 'half_reset') return `Round ${round.round} ends the half and wipes both teams back to pistol conditions.`;
+    if (!transition.next) return `Round ${round.round} closes the map.`;
+    if (transition.teams.vitality.nextPhase === 'half_reset') return `Round ${round.round} sends both teams back to pistols.`;
     const winner = getTeamLabel(round.winner);
     const loser = getTeamLabel(otherTeam(round.winner));
+    if (transition.aftershockRounds.length) {
+      return `${winner} break ${loser} for ${transition.aftershockRounds.length} round${transition.aftershockRounds.length > 1 ? 's' : ''}.`;
+    }
     const loserTier = transition.teams[otherTeam(round.winner)].nextTier;
-    return `${winner} win a ${formatBuyTier(round[round.winner].buy_tier)} and push ${loser} toward ${formatBuyTier(loserTier)} on round ${transition.next.round}.`;
+    return `${winner} push ${loser} into ${formatBuyTier(loserTier)} next.`;
   }
 
   function buildImpactSentence(transition) {
@@ -489,17 +505,17 @@
     const winner = round.winner;
     const loser = otherTeam(winner);
     if (!transition.next) {
-      return `Round ${round.round} is the map closer. The board stops at the result instead of inventing a next-round economy swing.`;
+      return `${getTeamLabel(winner)} finish the map on a ${formatBuyTier(round[winner].buy_tier)}, so there is no next-round economy swing to project.`;
     }
     if (transition.teams.vitality.nextPhase === 'half_reset') {
-      return `Round ${round.round} flows straight into halftime. The next round is a fresh pistol reset, so strategy carry-over becomes side reset instead of a normal money chain.`;
+      return `The half ends here, so normal money flow stops and both teams restart from pistol conditions.`;
     }
     const winnerNext = transition.teams[winner];
     const loserNext = transition.teams[loser];
     const aftershock = transition.aftershockRounds.length
-      ? `The pressure stays visible through round ${transition.aftershockRounds[transition.aftershockRounds.length - 1]}.`
-      : 'The pressure is mostly contained inside the immediate next round.';
-    return `${getTeamLabel(winner)} convert this ${formatBuyTier(round[winner].buy_tier)} into ${formatBuyTier(winnerNext.nextTier)} on round ${transition.next.round}, while ${getTeamLabel(loser)} fall toward ${formatBuyTier(loserNext.nextTier)}. ${aftershock}`;
+      ? `That weaker buy window lasts through round ${transition.aftershockRounds[transition.aftershockRounds.length - 1]}.`
+      : 'Most of the pressure is concentrated in the very next buy.';
+    return `Round ${transition.next.round} opens with ${getTeamLabel(winner)} on ${formatBuyTier(winnerNext.nextTier)} and ${getTeamLabel(loser)} on ${formatBuyTier(loserNext.nextTier)}. ${aftershock}`;
   }
 
   function buildRoundContext(round, transition) {
@@ -526,7 +542,9 @@
           `Money ${formatMoney(roundTeamData.money)}`,
           `Equipment ${formatMoney(roundTeamData.eq_value)}`
         ],
-        standouts: 'Player-level composition unavailable'
+        standouts: '',
+        compactMix: 'Player mix unavailable',
+        supportLine: 'Showing team-level economy only'
       };
     }
 
@@ -555,6 +573,7 @@
     });
 
     const utilAverage = totalGrenades / players.length;
+    const standoutSummary = buildStandoutList(standoutCounts);
     return {
       buyTier: roundTeamData.buy_tier,
       copy: `${getTeamLabel(teamKey)} enter this round on a ${formatBuyTier(roundTeamData.buy_tier)} with ${formatMoney(roundTeamData.eq_value)} of equipment spread across the team.`,
@@ -567,7 +586,9 @@
         `Heavy util x${utilHeavyCount}`,
         `Avg util ${utilAverage.toFixed(1)}`
       ],
-      standouts: buildStandoutList(standoutCounts)
+      standouts: '',
+      compactMix: buildCompactMix(rifleCount, smgCount, pistolOnlyCount),
+      supportLine: `Full armor ${fullArmorCount}/5 / Heavy util ${utilHeavyCount}/5${standoutSummary !== 'Standard sidearms and utility only' ? ` / Standout ${standoutSummary}` : ''}`
     };
   }
 
@@ -657,6 +678,27 @@
     if (!state.hoverRound) return;
     state.hoverRound = null;
     renderCurrentRound();
+  }
+
+  function syncTimelineAftershockBand(aftershock) {
+    const band = dom.timeline.querySelector('.eco-timeline-aftershock-band');
+    if (!band || !aftershock || !aftershock.impacted.length) {
+      if (band) band.removeAttribute('data-visible');
+      return;
+    }
+    const first = aftershock.impacted[0].round;
+    const last = aftershock.impacted[aftershock.impacted.length - 1].round;
+    const firstCard = dom.timeline.querySelector(`.eco-round-card[data-round="${first}"]`);
+    const lastCard = dom.timeline.querySelector(`.eco-round-card[data-round="${last}"]`);
+    if (!firstCard || !lastCard) {
+      band.removeAttribute('data-visible');
+      return;
+    }
+    const left = Math.max(firstCard.offsetLeft - 10, 0);
+    const right = lastCard.offsetLeft + lastCard.offsetWidth + 10;
+    band.style.left = `${left}px`;
+    band.style.width = `${Math.max(right - left, 0)}px`;
+    band.setAttribute('data-visible', 'true');
   }
 
   function bindBuyTierTooltips(scope) {
@@ -774,16 +816,107 @@
     return formatted;
   }
 
-  function renderTransitionSubcopy(teamTransition) {
-    if (teamTransition.nextPhase === 'map_end') return 'No future round remains on this map.';
-    if (teamTransition.nextPhase === 'half_reset') return 'The next round resets both sides to pistols.';
-    return `Next-round equipment shift: ${formatSignedMoney(teamTransition.nextEqDelta)}.`;
-  }
-
   function renderNextTierPill(teamTransition) {
     if (teamTransition.nextPhase === 'map_end') return '<span class="eco-reset-pill">Map end</span>';
     if (teamTransition.nextPhase === 'half_reset') return '<span class="eco-reset-pill">Half reset</span>';
     return `<span class="eco-stat-pill eco-next-tier-pill">Next</span>${renderBuyTierBadge(teamTransition.nextTier)}`;
+  }
+
+  function renderImpactTargetBadge(teamTransition) {
+    if (teamTransition.nextPhase === 'map_end') return '<span class="eco-reset-pill">Map end</span>';
+    if (teamTransition.nextPhase === 'half_reset') return '<span class="eco-reset-pill">Pistol reset</span>';
+    return renderBuyTierBadge(teamTransition.nextTier);
+  }
+
+  function buildPhaseSubcopy(phase, mode) {
+    if (mode === 'previous') {
+      if (phase === 'map_start') return 'No earlier round on this map';
+      if (phase === 'half_reset') return 'Compared across a half reset';
+      return 'Equipment change from the last round';
+    }
+    if (phase === 'map_end') return 'No follow-up round remains';
+    if (phase === 'half_reset') return 'Both sides restart on pistols';
+    return 'Projected setup for the next buy';
+  }
+
+  function getNextStateLabel(teamTransition) {
+    if (teamTransition.nextPhase === 'map_end') return 'Map end';
+    if (teamTransition.nextPhase === 'half_reset') return 'Pistol reset';
+    return formatBuyTier(teamTransition.nextTier);
+  }
+
+  function buildNextStateSubcopy(teamTransition) {
+    if (teamTransition.nextPhase === 'map_end') return 'This map stops here';
+    if (teamTransition.nextPhase === 'half_reset') return 'Money chain is wiped by halftime';
+    return `Eq shift ${formatSignedMoney(teamTransition.nextEqDelta)}`;
+  }
+
+  function buildCompactMix(rifleCount, smgCount, pistolOnlyCount) {
+    const parts = [
+      `${rifleCount} rifle${rifleCount === 1 ? '' : 's'}`,
+      `${smgCount} SMG${smgCount === 1 ? '' : 's'}`,
+      `${pistolOnlyCount} pistol-only`
+    ];
+    return parts.join(' / ');
+  }
+
+  function renderDeltaAftershockBand(root, barBand, impactedRounds, innerHeight) {
+    if (!impactedRounds.length) return;
+    const firstX = barBand(String(impactedRounds[0].round));
+    const lastX = barBand(String(impactedRounds[impactedRounds.length - 1].round));
+    if (firstX == null || lastX == null) return;
+    const gapHalf = (barBand.step() - barBand.bandwidth()) / 2;
+    const left = Math.max(firstX - gapHalf, 0);
+    const width = (lastX + barBand.bandwidth() + gapHalf) - left;
+    root.append('rect')
+      .attr('class', `eco-aftershock-band${state.hoverRound && state.hoverRound !== state.currentRound ? ' is-preview' : ''}`)
+      .attr('x', left)
+      .attr('y', 8)
+      .attr('width', Math.max(width, 0))
+      .attr('height', innerHeight - 24)
+      .attr('rx', 18);
+  }
+
+  function renderDeltaFocusLine(root, barBand, focusRound, innerHeight, isPreviewing) {
+    const x = barBand(String(focusRound));
+    if (x == null) return;
+    root.append('line')
+      .attr('class', `eco-delta-focus-line${isPreviewing ? ' is-preview' : ''}`)
+      .attr('x1', x + (barBand.bandwidth() / 2))
+      .attr('x2', x + (barBand.bandwidth() / 2))
+      .attr('y1', 0)
+      .attr('y2', innerHeight);
+  }
+
+  function renderDeltaInteractionLayer(root, rows, barBand, innerWidth, innerHeight) {
+    const lane = root.append('g').attr('class', 'eco-delta-hit-layer');
+    const cellWidth = barBand.step();
+    const gapHalf = (cellWidth - barBand.bandwidth()) / 2;
+    rows.forEach((row) => {
+      const x = barBand(String(row.round));
+      if (x == null) return;
+      const hitX = Math.max(x - gapHalf, 0);
+      const hitWidth = Math.min(cellWidth, innerWidth - hitX);
+      lane.append('rect')
+        .attr('class', 'eco-delta-hitbox')
+        .attr('x', hitX)
+        .attr('y', 0)
+        .attr('width', hitWidth)
+        .attr('height', innerHeight)
+        .attr('tabindex', 0)
+        .attr('role', 'button')
+        .attr('aria-label', `Preview round ${row.round}`)
+        .on('mouseenter', () => setHoverRound(row.round))
+        .on('focus', () => setHoverRound(row.round))
+        .on('blur', clearHoverRound)
+        .on('click', () => setCurrentRound(row.round))
+        .on('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setCurrentRound(row.round);
+          }
+        });
+    });
   }
 
   function getDeltaClass(delta, phase) {
@@ -986,3 +1119,6 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
+
+
+

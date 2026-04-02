@@ -80,9 +80,9 @@ CSC316/
 
 - Sequential “laser” traces from attacker to victim death location, filterable by map, side, player, and weapon class.
 
-### 5. Story & Conclusion
+### 5. Story
 
-- Scroll-linked story cards and a conclusion section anchor the narrative for the course deliverable.
+- Scroll-linked story cards anchor the narrative for the course deliverable.
 
 ## Libraries & APIs
 

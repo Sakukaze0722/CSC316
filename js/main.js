@@ -103,6 +103,357 @@ function setThemedRadarImage(imgEl, rawSrc) {
 }
 
 // ============================================================
+//  Animated Heatmap (heatmap-section)
+//  Per-round cumulative heatmaps. Team selector (Vitality / MongolZ).
+//  Left canvas = CT side, Right canvas = T side.
+//  No flash: draw new frame directly without visible clearRect gap.
+// ============================================================
+(function initAnimatedHeatmap() {
+  const DATA_URL = "data/processed/heatmap_timeslice.json";
+  const MAP_IMG_BASE = "data/maps/";
+  const CANVAS_SIZE = 1024;
+
+  let hmData = null;
+  let currentMap = "de_mirage";
+  let currentHalf = "first";
+  let currentRound = 0;
+  let numRounds = 0;
+  let isPlaying = false;
+  let playTimer = null;
+
+  const canvas1 = document.getElementById("hmAnimCanvas1");
+  const ctx1 = canvas1.getContext("2d");
+  const canvas2 = document.getElementById("hmAnimCanvas2");
+  const ctx2 = canvas2.getContext("2d");
+  const radar1 = document.getElementById("hmAnimRadar1");
+  const radar2 = document.getElementById("hmAnimRadar2");
+  const slider = document.getElementById("hmAnimSlider");
+  const badge = document.getElementById("hmAnimBadge");
+  const playBtn = document.getElementById("hmAnimPlayBtn");
+  const dotsContainer = document.getElementById("hmAnimDots");
+
+  // Image cache: base64 -> decoded Image
+  const imgCache = new Map();
+
+  function loadImg(b64) {
+    if (!b64) return Promise.resolve(null);
+    if (imgCache.has(b64)) return Promise.resolve(imgCache.get(b64));
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => { imgCache.set(b64, img); resolve(img); };
+      img.onerror = () => resolve(null);
+      img.src = "data:image/png;base64," + b64;
+    });
+  }
+
+  function getViewKeys() {
+    if (currentHalf === "first") {
+      return { left: "vitality_ct", right: "mongolz_t" };
+    } else {
+      return { left: "mongolz_ct", right: "vitality_t" };
+    }
+  }
+
+  function getMapData() { return hmData ? hmData[currentMap] : null; }
+
+  function getHalfBounds(md) {
+    const halftimeRound = md?.halftime_round ?? 12;
+    const firstEnd = Math.min(halftimeRound, md?.num_rounds ?? 0) - 1;
+    const secondStart = Math.min(halftimeRound, md?.num_rounds ?? 0);
+    return {
+      first: {
+        start: 0,
+        end: firstEnd,
+      },
+      second: {
+        start: secondStart,
+        end: (md?.num_rounds ?? 0) - 1,
+      },
+    };
+  }
+
+  function getActiveRange(md = getMapData()) {
+    if (!md) return { start: 0, end: -1, count: 0 };
+    const bounds = getHalfBounds(md)[currentHalf];
+    const count = Math.max(0, bounds.end - bounds.start + 1);
+    return { ...bounds, count };
+  }
+
+  function clampRoundToActiveHalf(md = getMapData()) {
+    const range = getActiveRange(md);
+    if (range.count === 0) {
+      currentRound = 0;
+      return range;
+    }
+    if (currentRound < range.start || currentRound > range.end) {
+      currentRound = range.start;
+    }
+    return range;
+  }
+
+  // ── Cross-fade engine ──
+  // Two offscreen canvases per visible canvas hold prev/next frames.
+  // requestAnimationFrame interpolates between them over FADE_MS.
+  const FADE_MS = 400;
+
+  function makeOffscreen() {
+    const c = document.createElement("canvas");
+    c.width = CANVAS_SIZE; c.height = CANVAS_SIZE;
+    return c;
+  }
+  // Per-canvas fade state: { prev, next, raf, startTime }
+  const fadeState1 = { prev: makeOffscreen(), next: makeOffscreen(), raf: null };
+  const fadeState2 = { prev: makeOffscreen(), next: makeOffscreen(), raf: null };
+
+  function stampFrame(offCanvas, img) {
+    const oc = offCanvas.getContext("2d");
+    oc.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    if (isDarkThemeActive()) {
+      oc.fillStyle = "rgba(0,0,0,0.25)";
+      oc.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    }
+    if (img) oc.drawImage(img, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  }
+
+  function crossFade(ctx, fs, newImg, instant) {
+    if (fs.raf) { cancelAnimationFrame(fs.raf); fs.raf = null; }
+
+    // Copy current "next" into "prev", then stamp new frame into "next"
+    const prevCtx = fs.prev.getContext("2d");
+    prevCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    prevCtx.drawImage(fs.next, 0, 0);
+    stampFrame(fs.next, newImg);
+
+    if (instant) {
+      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      ctx.drawImage(fs.next, 0, 0);
+      return;
+    }
+
+    const t0 = performance.now();
+    function tick(now) {
+      const p = Math.min((now - t0) / FADE_MS, 1);
+      // Ease-in-out
+      const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      ctx.globalAlpha = 1 - ease;
+      ctx.drawImage(fs.prev, 0, 0);
+      ctx.globalAlpha = ease;
+      ctx.drawImage(fs.next, 0, 0);
+      ctx.globalAlpha = 1;
+      if (p < 1) fs.raf = requestAnimationFrame(tick);
+    }
+    fs.raf = requestAnimationFrame(tick);
+  }
+
+  // Legacy helper kept for instant draws (initial load, map switch, etc.)
+  function drawFrame(ctx, img) {
+    const fs = ctx === ctx1 ? fadeState1 : fadeState2;
+    stampFrame(fs.next, img);
+    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.drawImage(fs.next, 0, 0);
+  }
+
+  function updateLabels() {
+    const md = getMapData();
+    const keys = getViewKeys();
+    const bounds = getHalfBounds(md);
+    // Parse team and side from view key like "vitality_ct"
+    function labelFor(key) {
+      const [t, s] = key.split("_");
+      const team = t === "vitality" ? "Vitality" : "MongolZ";
+      const side = s.toUpperCase();
+      const color = s === "ct" ? "#58a6ff" : "#ff7b72";
+      const halfKey = ((t === "vitality" && s === "ct") || (t === "mongolz" && s === "t")) ? "first" : "second";
+      const halfBounds = bounds[halfKey];
+      const startRound = halfBounds.start + 1;
+      const endRound = Math.max(halfBounds.start, halfBounds.end) + 1;
+      const rounds = `${startRound}–${endRound}`;
+      return `<strong style="color:${color}">${team}</strong> — ${side} Side (Rounds ${rounds})`;
+    }
+    document.getElementById("hmAnimLabel1").innerHTML = labelFor(keys.left);
+    document.getElementById("hmAnimLabel2").innerHTML = labelFor(keys.right);
+  }
+
+  function updateDots() {
+    const range = getActiveRange();
+    const dots = dotsContainer.querySelectorAll(".hm-anim-dot");
+    const localIndex = range.count > 0 ? currentRound - range.start : -1;
+    dots.forEach((dot, i) => {
+      dot.classList.toggle("active", i === localIndex);
+      dot.classList.toggle("past", i < localIndex);
+    });
+  }
+
+  function updateUI() {
+    const md = getMapData();
+    if (!md) return;
+    const range = clampRoundToActiveHalf(md);
+    const activeRoundNumber = currentRound + 1;
+    const halfLabel = currentHalf === "first" ? "1st Half" : "2nd Half";
+    const localIndex = range.count > 0 ? currentRound - range.start : 0;
+    badge.textContent = `Round ${activeRoundNumber} / ${md.num_rounds}  ·  ${halfLabel}`;
+    slider.value = localIndex;
+    slider.max = Math.max(0, range.count - 1);
+    const startLabel = document.querySelector("#heatmap-section .hm-anim-timeline .hm-anim-time-label");
+    const endLabel = document.getElementById("hmAnimEndLabel");
+    if (startLabel) startLabel.textContent = `Round ${range.count > 0 ? range.start + 1 : 1}`;
+    if (endLabel) endLabel.textContent = `Round ${range.count > 0 ? range.end + 1 : 1}`;
+    updateLabels();
+    updateDots();
+  }
+
+  async function renderRound(roundIdx, instant) {
+    const md = getMapData();
+    if (!md) return;
+
+    const keys = getViewKeys();
+    const frames_left  = md.views[keys.left];
+    const frames_right = md.views[keys.right];
+
+    const [img1, img2] = await Promise.all([
+      loadImg(frames_left  ? frames_left[roundIdx]  : null),
+      loadImg(frames_right ? frames_right[roundIdx] : null),
+    ]);
+
+    crossFade(ctx1, fadeState1, img1, instant);
+    crossFade(ctx2, fadeState2, img2, instant);
+    updateUI();
+  }
+
+  function buildDots() {
+    const range = getActiveRange();
+    dotsContainer.innerHTML = "";
+    for (let i = 0; i < range.count; i++) {
+      const dot = document.createElement("div");
+      dot.className = "hm-anim-dot";
+      if (i === 0) dot.classList.add("active");
+      dot.addEventListener("click", () => {
+        stopPlay();
+        currentRound = range.start + i;
+        renderRound(currentRound, true);
+      });
+      dotsContainer.appendChild(dot);
+    }
+  }
+
+  function stopPlay() {
+    isPlaying = false;
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+    playBtn.textContent = "\u25B6 Play";
+    playBtn.classList.remove("playing");
+  }
+
+  function startPlay() {
+    const range = getActiveRange();
+    if (range.count === 0) return;
+    if (currentRound >= range.end) {
+      currentRound = range.start;
+    }
+    isPlaying = true;
+    playBtn.textContent = "\u23F8 Pause";
+    playBtn.classList.add("playing");
+    const speed = Math.max(parseInt(document.getElementById("hmAnimSpeed").value, 10) || 800, FADE_MS + 100);
+    renderRound(currentRound, false);
+    playTimer = setInterval(() => {
+      currentRound++;
+      if (currentRound > range.end) {
+        currentRound = range.end;
+        stopPlay();
+        return;
+      }
+      renderRound(currentRound, false);
+    }, speed);
+  }
+
+  function syncMapState() {
+    const md = getMapData();
+    if (!md) return;
+    numRounds = md.num_rounds;
+    clampRoundToActiveHalf(md);
+    buildDots();
+    updateUI();
+  }
+
+  async function init() {
+    try {
+      const resp = await fetch(DATA_URL);
+      hmData = await resp.json();
+    } catch (err) {
+      console.error("[HM-Anim] Failed to load heatmap data:", err);
+      return;
+    }
+
+    syncMapState();
+
+    // Map tabs
+    document.querySelectorAll("#heatmap-section .hm-map-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        stopPlay();
+        currentMap = tab.dataset.map;
+        document.querySelectorAll("#heatmap-section .hm-map-tab").forEach(t =>
+          t.classList.toggle("active", t.dataset.map === currentMap));
+        const src = MAP_IMG_BASE + currentMap + ".png";
+        setThemedRadarImage(radar1, src);
+        setThemedRadarImage(radar2, src);
+        syncMapState();
+        renderRound(currentRound, true);
+      });
+    });
+
+    // Half tabs
+    document.querySelectorAll(".hm-view-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        stopPlay();
+        currentHalf = tab.dataset.half;
+        document.querySelectorAll(".hm-view-tab").forEach(t =>
+          t.classList.toggle("active", t.dataset.half === currentHalf));
+        const range = clampRoundToActiveHalf();
+        currentRound = range.start;
+        buildDots();
+        renderRound(currentRound, true);
+      });
+    });
+
+    // Play/pause
+    playBtn.addEventListener("click", () => {
+      if (isPlaying) { stopPlay(); } else { startPlay(); }
+    });
+
+    // Speed change
+    document.getElementById("hmAnimSpeed").addEventListener("change", () => {
+      if (isPlaying) { stopPlay(); startPlay(); }
+    });
+
+    // Slider
+    slider.addEventListener("input", () => {
+      stopPlay();
+      const range = getActiveRange();
+      currentRound = range.start + parseInt(slider.value, 10);
+      renderRound(currentRound, true);
+    });
+
+    // Theme change observer
+    new MutationObserver(() => {
+      const src = MAP_IMG_BASE + currentMap + ".png";
+      setThemedRadarImage(radar1, src);
+      setThemedRadarImage(radar2, src);
+      renderRound(currentRound, true);
+    }).observe(document.body, { attributes: true, attributeFilter: ["data-theme"] });
+
+    // Initial render
+    const src = MAP_IMG_BASE + currentMap + ".png";
+    await Promise.all([
+      setThemedRadarImage(radar1, src),
+      setThemedRadarImage(radar2, src),
+    ]);
+    renderRound(currentRound, true);
+  }
+
+  init();
+})();
+
+// ============================================================
 //  Visualization 3 — Utility Lane Evolution
 // ============================================================
 (function initUtilityLane() {
@@ -120,7 +471,7 @@ function setThemedRadarImage(imgEl, rawSrc) {
 
   let allData = null;
   let currentMap = "de_mirage";
-  let filters = { side: "all", match: "all", type: "all", player: "all" };
+  let filters = { side: "all", match: "all", types: new Set(["smoke", "flash", "he", "molotov"]), player: "all" };
   let animRAF = null;
   let isSectionVisible = false;
   let hotspotPulseRAF = null;
@@ -141,7 +492,7 @@ function setThemedRadarImage(imgEl, rawSrc) {
     let trajs = allData.maps[currentMap].trajectories;
     if (filters.side !== "all") trajs = trajs.filter(t => t.side === filters.side);
     if (filters.match !== "all") trajs = trajs.filter(t => t.match === filters.match);
-    if (filters.type !== "all") trajs = trajs.filter(t => t.type === filters.type);
+    if (filters.types.size < 4) trajs = trajs.filter(t => filters.types.has(t.type));
     if (filters.player !== "all") trajs = trajs.filter(t => t.player === filters.player);
     return trajs;
   }
@@ -319,7 +670,7 @@ function setThemedRadarImage(imgEl, rawSrc) {
   // Draw pulsing ring indicators on hotspot canvas
   function startHotspotPulse() {
     if (hotspotPulseRAF) cancelAnimationFrame(hotspotPulseRAF);
-    if (currentClusters.length === 0 || filters.type === "all") { hsCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE); return; }
+    if (currentClusters.length === 0 || filters.types.size === 4) { hsCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE); return; }
 
     function draw(now) {
       hsCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -431,7 +782,7 @@ function setThemedRadarImage(imgEl, rawSrc) {
   function showTooltip(cluster, mouseX, mouseY) {
     const header = document.getElementById("ulTooltipHeader");
     const label = { smoke: "Smoke", flash: "Flash", he: "HE", molotov: "Molotov" }[cluster.dominantType] || "Utility";
-    const singleTypeMode = filters.type !== "all";
+    const singleTypeMode = filters.types.size === 1;
     header.textContent = `${label} Hotspot · ${cluster.count}`;
     const pieRow = tooltip.querySelector(".vis-tooltip-pie-row");
     const divider = tooltip.querySelector(".vis-tooltip-divider");
@@ -541,9 +892,10 @@ function setThemedRadarImage(imgEl, rawSrc) {
     const n = sorted.length;
 
     // Timing: each arc takes ARC_DUR ms to grow; a new throw starts every INTERVAL ms
-    // Total duration ≈ (n-1)*INTERVAL + ARC_DUR — keep under ~5s
-    const ARC_DUR = 250;                                     // ms per arc growth
-    const maxTotal = 4500;                                   // target max total
+    // Total duration is controlled by the speed dropdown
+    const speedSelect = document.getElementById("ulSpeedSelect");
+    const maxTotal = speedSelect ? parseInt(speedSelect.value, 10) : 4500;
+    const ARC_DUR = Math.max(150, maxTotal * 0.055);         // scale arc duration with speed
     const interval = Math.max(2, (maxTotal - ARC_DUR) / n);  // ms between successive throws
     const totalDuration = (n - 1) * interval + ARC_DUR;
 
@@ -631,11 +983,12 @@ function setThemedRadarImage(imgEl, rawSrc) {
     // Reset filters
     filters.side = "all";
     filters.match = "all";
-    filters.type = "all";
+    filters.types = new Set(["smoke", "flash", "he", "molotov"]);
     filters.player = "all";
-    document.querySelectorAll("#ulSideFilter .ul-filter-btn, #ulTypeFilter .ul-filter-btn, #ulPlayerFilter .ul-filter-btn").forEach(btn => {
+    document.querySelectorAll("#ulSideFilter .ul-filter-btn, #ulPlayerFilter .ul-filter-btn").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.value === "all");
     });
+    syncBuyCardUI();
     updateMatchFilter();
     updateVisualization();
   }
@@ -659,11 +1012,60 @@ function setThemedRadarImage(imgEl, rawSrc) {
       updateVisualization();
     });
 
+    // Speed control — replay animation when speed changes
+    const ulSpeedSelect = document.getElementById("ulSpeedSelect");
+    if (ulSpeedSelect) {
+      ulSpeedSelect.addEventListener("change", () => {
+        if (isSectionVisible) updateVisualization();
+      });
+    }
+
     // Bind sidebar filters (once)
     bindFilterGroup("ulSideFilter", "side");
     bindFilterGroup("ulMatchFilter", "match");
-    bindFilterGroup("ulTypeFilter", "type");
     bindFilterGroup("ulPlayerFilter", "player");
+
+    // Buy-screen utility guide cards — multi-select with compact Select All toggle
+    const ALL_TYPES = ["smoke", "flash", "he", "molotov"];
+    const buyCards = document.getElementById("utilBuyCards");
+    const selectAllBtn = document.getElementById("utilBuySelectAll");
+    function syncBuyCardUI() {
+      const allSelected = filters.types.size === 4;
+      if (selectAllBtn) selectAllBtn.classList.toggle("active", allSelected);
+      if (!buyCards) return;
+      buyCards.querySelectorAll(".util-buy-card").forEach(c => {
+        c.classList.toggle("active", filters.types.has(c.dataset.util));
+      });
+    }
+    if (selectAllBtn) {
+      selectAllBtn.addEventListener("click", () => {
+        if (filters.types.size === 4) {
+          filters.types.clear();
+          filters.types.add("smoke");
+        } else {
+          ALL_TYPES.forEach(t => filters.types.add(t));
+        }
+        syncBuyCardUI();
+        updateVisualization();
+      });
+    }
+    if (buyCards) {
+      buyCards.addEventListener("click", (e) => {
+        const card = e.target.closest(".util-buy-card");
+        if (!card) return;
+        const utilValue = card.dataset.util;
+        if (filters.types.has(utilValue)) {
+          filters.types.delete(utilValue);
+        } else {
+          filters.types.add(utilValue);
+        }
+        if (filters.types.size === 0) {
+          ALL_TYPES.forEach(t => filters.types.add(t));
+        }
+        syncBuyCardUI();
+        updateVisualization();
+      });
+    }
 
     // Replay animation every time the section re-enters the viewport
     document.addEventListener("sectionVisible", (e) => {
@@ -694,6 +1096,7 @@ function setThemedRadarImage(imgEl, rawSrc) {
     // Initial load
     updateMatchFilter();
     setThemedRadarImage(radarImg, MAP_IMG_BASE + currentMap + ".png");
+    syncBuyCardUI();
     updateVisualization();
   }
 

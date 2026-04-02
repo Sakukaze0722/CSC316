@@ -11,6 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 </head>
 <body class="dashboard-body" data-theme="dark">
+  <p class="util-buy-subtitle util-buy-subtitle--dom-root" aria-hidden="true"></p>
   <canvas id="particlesCanvas" class="particles-canvas" aria-hidden="true"></canvas>
   <div id="themeSweep" class="theme-sweep" aria-hidden="true"></div>
 
@@ -193,7 +194,7 @@
               <select class="mc-select" id="mcRoundSelect"></select>
             </div>
             <div class="mc-control-group">
-              <button class="mc-btn" id="mcPlayBtn">&#9654; Play</button>
+              <button class="mc-btn mc-play-cta" id="mcPlayBtn">&#9654; Play Round</button>
             </div>
             <div class="mc-control-group">
               <label>Speed</label>
@@ -270,15 +271,12 @@
                 </div>
               </div>
               <div class="mc-panel-card mc-info">
-                <h3>How It Works</h3>
+                <h3>How to Read This</h3>
                 <p>
-                  Territory is computed using <strong>Voronoi nearest-player distance</strong>:
-                  each point on the map belongs to whichever team's closest alive player is nearer.<br><br>
-                  <strong style="color:#58a6ff">Blue = CT territory</strong><br>
-                  <strong style="color:#ff7b72">Red = T territory</strong><br><br>
-                  If T pushes forward, the area behind them remains T-controlled
-                  (since no CT player is closer). Boundaries shift as players move and die.<br><br>
-                  <strong>Controls:</strong> Space = play/pause, Arrow keys = step frames.
+                  <strong style="color:#58a6ff">&#9632; Blue</strong> = area closer to <strong>CT</strong> (defenders)<br>
+                  <strong style="color:#ff7b72">&#9632; Red</strong> = area closer to <strong>T</strong> (attackers)<br><br>
+                  The map updates each frame based on which team's nearest alive player is closest to every point. As players push forward, get kills, or fall back, the colored zones shift.<br><br>
+                  <strong>Tip:</strong> Hit <kbd>Space</kbd> to play/pause. Use <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> arrow keys to step through frames one at a time.
                 </p>
               </div>
             </div>
@@ -301,18 +299,79 @@
         </p>
       </div>
       <h2>Team Movement Heatmaps</h2>
-      <p>Player positioning patterns for each team on CT and T sides — Vitality vs The MongolZ, BLAST.tv Austin Major 2025.</p>
-      <div class="hm-map-tabs">
-        <div class="hm-map-tab active" data-map="de_mirage">Mirage</div>
-        <div class="hm-map-tab" data-map="de_dust2">Dust II</div>
-        <div class="hm-map-tab" data-map="de_inferno">Inferno</div>
-      </div>
-      <div class="hm-grid hm-grid-2" id="hmGrid">
-        <div class="hm-card">
-          <img id="hmCombo1" src="output/heatmaps_combined/de_mirage_vitality_ct_mongolz_t.png" alt="Vitality CT vs MongolZ T">
+      <p>Player positioning patterns evolve as the round progresses — watch how each team's presence shifts from spawn to endgame.</p>
+
+      <div class="hm-anim-wrapper">
+        <!-- Top controls bar -->
+        <div class="hm-anim-controls">
+          <div class="hm-anim-control-group">
+            <label>Map</label>
+            <div class="hm-map-tabs">
+              <div class="hm-map-tab active" data-map="de_mirage">Mirage</div>
+              <div class="hm-map-tab" data-map="de_dust2">Dust II</div>
+              <div class="hm-map-tab" data-map="de_inferno">Inferno</div>
+            </div>
+          </div>
+          <div class="hm-anim-control-group">
+            <label>Half</label>
+            <div class="hm-view-tabs">
+              <div class="hm-view-tab active" data-half="first">First Half</div>
+              <div class="hm-view-tab" data-half="second">Second Half</div>
+            </div>
+          </div>
+          <div class="hm-anim-control-group">
+            <button class="hm-anim-play-btn" id="hmAnimPlayBtn">&#9654; Play</button>
+          </div>
+          <div class="hm-anim-control-group">
+            <label>Speed</label>
+            <select class="hm-anim-select" id="hmAnimSpeed">
+              <option value="1500">0.5x</option>
+              <option value="800" selected>1x</option>
+              <option value="400">2x</option>
+              <option value="200">4x</option>
+            </select>
+          </div>
+          <div class="hm-anim-badge" id="hmAnimBadge">Round 1 / 19</div>
         </div>
-        <div class="hm-card">
-          <img id="hmCombo2" src="output/heatmaps_combined/de_mirage_vitality_t_mongolz_ct.png" alt="Vitality T vs MongolZ CT">
+
+        <!-- Dual canvas area -->
+        <div class="hm-anim-body">
+          <div class="hm-anim-canvas-wrap">
+            <div class="hm-anim-canvas-card">
+              <div class="hm-anim-canvas-container" id="hmAnimContainer1">
+                <img id="hmAnimRadar1" class="hm-anim-radar" src="data/maps/de_mirage.png" alt="Radar">
+                <canvas id="hmAnimCanvas1" width="1024" height="1024"></canvas>
+              </div>
+              <div class="hm-anim-canvas-label" id="hmAnimLabel1">
+                <strong style="color:#58a6ff">Vitality</strong> — CT Side (Rounds 1–12)
+              </div>
+            </div>
+            <div class="hm-anim-canvas-card">
+              <div class="hm-anim-canvas-container" id="hmAnimContainer2">
+                <img id="hmAnimRadar2" class="hm-anim-radar" src="data/maps/de_mirage.png" alt="Radar">
+                <canvas id="hmAnimCanvas2" width="1024" height="1024"></canvas>
+              </div>
+              <div class="hm-anim-canvas-label" id="hmAnimLabel2">
+                <strong style="color:#ff7b72">MongolZ</strong> — T Side (Rounds 1–12)
+              </div>
+            </div>
+          </div>
+
+          <!-- Timeline slider -->
+          <div class="hm-anim-timeline">
+            <span class="hm-anim-time-label">Round 1</span>
+            <input type="range" id="hmAnimSlider" min="0" max="18" value="0" step="1" class="hm-anim-slider">
+            <span class="hm-anim-time-label" id="hmAnimEndLabel">Round 19</span>
+          </div>
+
+          <!-- Segment progress dots -->
+          <div class="hm-anim-dots" id="hmAnimDots"></div>
+        </div>
+
+        <!-- Reading guide -->
+        <div class="hm-anim-guide">
+          <p><strong style="color:#58a6ff">&#9632; Blue glow</strong> = CT-side positioning &nbsp;&nbsp; <strong style="color:#ff7b72">&#9632; Red glow</strong> = T-side positioning</p>
+          <p>Brighter = more time spent. Watch how positions shift from early-round defaults to late-round aggression. Spawn areas are suppressed so the heatmap reflects real strategy, not buy-time idle positions.</p>
         </div>
       </div>
     </section>
@@ -339,6 +398,79 @@
       <h2>Utility Lane Evolution</h2>
       <p>Vitality grenade trajectories across BLAST.tv Austin Major 2025 — throw origins to landing zones.</p>
     </div>
+
+    <!-- Buy-Screen Style Utility Guide -->
+    <section class="util-buy-screen" id="utilBuyScreen">
+      <div class="util-buy-header">
+        <div class="util-buy-header-row">
+          <div class="util-buy-header-spacer" aria-hidden="true"></div>
+          <div class="util-buy-title-row">
+            <svg class="util-buy-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <!-- HE-style grenade: fixed colors, not tied to theme -->
+              <ellipse cx="12" cy="14" rx="7" ry="6.5" fill="#5c6b3a" stroke="#2d331f" stroke-width="1.2"/>
+              <path d="M12 7.5v3.2" stroke="#3d4428" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M10.2 6.8h3.6l.5-1.1H9.7l.5 1.1z" fill="#8a9178" stroke="#2d331f" stroke-width="0.9" stroke-linejoin="round"/>
+              <path d="M9.5 12.5c1.2 2.1 3.8 2.1 5 0" stroke="#3d4a2a" stroke-width="0.9" stroke-linecap="round" fill="none"/>
+              <circle cx="12" cy="13.8" r="1.35" fill="#2d331f" opacity="0.35"/>
+            </svg>
+            <h3>CS2 Utility Guide — The Buy Menu</h3>
+          </div>
+          <div class="util-buy-header-actions">
+            <button class="util-buy-select-all active" id="utilBuySelectAll" type="button">
+              <span class="util-buy-select-all-box"></span>
+              <span class="util-buy-select-all-label">Select All</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="util-buy-cards" id="utilBuyCards">
+        <!-- Smoke -->
+        <button class="util-buy-card active" data-util="smoke">
+          <div class="util-buy-card-icon util-card-smoke">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="#4fc3f7" stroke-width="2"/><path d="M18 28c0-4 3-8 6-8s6 4 6 8" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round"/><path d="M15 26c2-6 5-10 9-10s7 4 9 10" stroke="#4fc3f7" stroke-width="1.2" opacity="0.5"/></svg>
+          </div>
+          <div class="util-buy-card-info">
+            <span class="util-buy-card-name">Smoke Grenade</span>
+            <span class="util-buy-card-desc">Creates a thick cloud of smoke that blocks vision for ~18 seconds. Used to cut off sightlines, block enemy AWPers, and create safe crossing points.</span>
+          </div>
+          <span class="util-buy-card-price">$300</span>
+        </button>
+        <!-- Flash -->
+        <button class="util-buy-card" data-util="flash">
+          <div class="util-buy-card-icon util-card-flash">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="#fff176" stroke-width="2"/><polygon points="24,10 28,22 36,22 30,30 32,40 24,33 16,40 18,30 12,22 20,22" stroke="#fff176" stroke-width="1.5" fill="none"/></svg>
+          </div>
+          <div class="util-buy-card-info">
+            <span class="util-buy-card-name">Flashbang</span>
+            <span class="util-buy-card-desc">Emits a blinding burst of light that turns the enemy's screen white for several seconds. Used to temporarily blind opponents before peeking or entering a site.</span>
+          </div>
+          <span class="util-buy-card-price">$200</span>
+        </button>
+        <!-- HE -->
+        <button class="util-buy-card" data-util="he">
+          <div class="util-buy-card-icon util-card-he">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="#ef5350" stroke-width="2"/><circle cx="24" cy="26" r="8" stroke="#ef5350" stroke-width="1.5"/><line x1="24" y1="18" x2="24" y2="13" stroke="#ef5350" stroke-width="2" stroke-linecap="round"/><line x1="24" y1="13" x2="27" y2="11" stroke="#ef5350" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <div class="util-buy-card-info">
+            <span class="util-buy-card-name">HE Grenade</span>
+            <span class="util-buy-card-desc">A fragmentation grenade that deals explosive damage in a radius. Used to soften enemies behind cover, finish off low-HP players, or deny a rush.</span>
+          </div>
+          <span class="util-buy-card-price">$300</span>
+        </button>
+        <!-- Molotov -->
+        <button class="util-buy-card" data-util="molotov">
+          <div class="util-buy-card-icon util-card-molotov">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="#ff9800" stroke-width="2"/><rect x="21" y="18" width="6" height="14" rx="2" stroke="#ff9800" stroke-width="1.5"/><line x1="24" y1="18" x2="24" y2="13" stroke="#ff9800" stroke-width="1.5" stroke-linecap="round"/><path d="M22 13c0-2 2-3 2-5" stroke="#ff9800" stroke-width="1.2" stroke-linecap="round"/><path d="M26 14c0-2-1-3-1-4" stroke="#ff9800" stroke-width="1" opacity="0.6" stroke-linecap="round"/></svg>
+          </div>
+          <div class="util-buy-card-info">
+            <span class="util-buy-card-name">Molotov / Incendiary</span>
+            <span class="util-buy-card-desc">Spreads fire on the ground for ~7 seconds, dealing damage to anyone standing in it. Used to deny area, force enemies out of cover, or delay a push.</span>
+          </div>
+          <span class="util-buy-card-price">$400</span>
+        </button>
+      </div>
+    </section>
+
     <section>
       <div id="vis3" class="vis-container">
         <div class="ul-wrapper">
@@ -355,6 +487,15 @@
             </div>
             <div class="ul-control-group">
               <button class="ul-btn" id="ulReplayBtn">&#10227; Replay</button>
+            </div>
+            <div class="ul-control-group">
+              <label>Speed</label>
+              <select class="ul-select" id="ulSpeedSelect">
+                <option value="9000">0.5x</option>
+                <option value="4500" selected>1x</option>
+                <option value="2250">2x</option>
+                <option value="1200">4x</option>
+              </select>
             </div>
             <div class="ul-stat-badge" id="ulStatBadge">0 trajectories</div>
           </div>
@@ -405,16 +546,6 @@
                 </div>
               </div>
               <div class="ul-panel-card">
-                <h3>Grenade Type</h3>
-                <div class="ul-filter-group" id="ulTypeFilter">
-                  <button class="ul-filter-btn active" data-value="all">All</button>
-                  <button class="ul-filter-btn" data-value="smoke">Smoke</button>
-                  <button class="ul-filter-btn" data-value="flash">Flash</button>
-                  <button class="ul-filter-btn" data-value="he">HE</button>
-                  <button class="ul-filter-btn" data-value="molotov">Molotov</button>
-                </div>
-              </div>
-              <div class="ul-panel-card">
                 <h3>Player</h3>
                 <div class="ul-filter-group" id="ulPlayerFilter">
                   <button class="ul-filter-btn active" data-value="all">All</button>
@@ -426,14 +557,14 @@
                 </div>
               </div>
               <div class="ul-panel-card ul-info">
-                <h3>How It Works</h3>
+                <h3>How to Read This</h3>
                 <p>
-                  Each arc connects a <strong>throw origin</strong> to its <strong>landing point</strong>.<br><br>
-                  <strong style="color:#4fc3f7">Blue = Smoke</strong><br>
-                  <strong style="color:#fff176">Yellow = Flash</strong><br>
-                  <strong style="color:#ef5350">Red = HE Grenade</strong><br>
-                  <strong style="color:#ff9800">Orange = Molotov</strong><br><br>
-                  Landing points are highlighted with glowing dots. All trajectories fade in simultaneously for a dense snapshot effect.
+                  Each curved line shows a grenade's flight path — from the <strong>player's hand</strong> to where it <strong>lands on the map</strong>.<br><br>
+                  <strong style="color:#4fc3f7">&#9632; Blue</strong> = Smoke (blocks vision)<br>
+                  <strong style="color:#fff176">&#9632; Yellow</strong> = Flash (blinds enemies)<br>
+                  <strong style="color:#ef5350">&#9632; Red</strong> = HE (explosive damage)<br>
+                  <strong style="color:#ff9800">&#9632; Orange</strong> = Molotov (fire zone)<br><br>
+                  <strong>Tip:</strong> Glowing dots mark landing zones. Hover over clusters to see detailed breakdowns. Use the speed control above to slow down the animation.
                 </p>
               </div>
             </div>
@@ -548,10 +679,15 @@
                 </div>
               </div>
               <div class="kv-panel-card kv-info">
-                <h3>Reading the Map</h3>
+                <h3>How to Read This</h3>
                 <p>
-                  Each vector points from the <strong>attacker</strong> to the <strong>victim's death location</strong>, marked with a red <strong style="color:#ef5350">✕</strong>.<br><br>
-                  Arrowheads indicate the direction of fire. Color encodes weapon class. Headshots are shown with a brighter <strong style="color:#ef5350">✕</strong>.
+                  Each line connects <strong>where the killer stood</strong> to <strong>where the victim died</strong> <strong style="color:#ef5350">✕</strong>. Arrowheads show the direction of fire.<br><br>
+                  <strong style="color:#42a5f5">&#9632; Pistol</strong> — close-range sidearms<br>
+                  <strong style="color:#66bb6a">&#9632; SMG</strong> — fast-firing, short-mid range<br>
+                  <strong style="color:#ffa726">&#9632; Rifle</strong> — the most common primary weapons<br>
+                  <strong style="color:#ab47bc">&#9632; Sniper</strong> — long-range, one-shot kills<br>
+                  <strong style="color:#ef5350">&#9632; Shotgun</strong> — devastating at close range<br><br>
+                  <strong>Tip:</strong> Dense webs of lines reveal the deadliest angles. Hover over kill zones for detailed breakdowns.
                 </p>
               </div>
             </div>

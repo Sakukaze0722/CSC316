@@ -331,11 +331,11 @@
     const priorScrollLeft = dom.deltaChart ? dom.deltaChart.scrollLeft : 0;
     const width = Math.max(dom.deltaChart.clientWidth || 960, (mapData.rounds.length * 86) + 160);
     const height = 520;
-    const margin = { top: 24, right: 24, bottom: 20, left: 90 };
+    const margin = { top: 24, right: 24, bottom: 20, left: 118 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
-    const headerHeight = 94;
-    const laneGap = 86;
+    const headerHeight = 110;
+    const laneGap = 82;
     const laneHeight = (innerHeight - headerHeight - laneGap) / 2;
     const vitalityOffsetY = headerHeight;
     const mongolzOffsetY = headerHeight + laneHeight + laneGap;
@@ -344,7 +344,7 @@
       .domain(mapData.rounds.map((round) => String(round.round)))
       .range([0, innerWidth])
       .paddingInner(0.18)
-      .paddingOuter(0.08);
+      .paddingOuter(0.16);
     const deltaRows = buildDeltaRows(mapData);
     const maxAbs = Math.max(1000, d3.max(deltaRows.flatMap((row) => ['vitality', 'mongolz'].map((team) => Math.abs(row[team].delta || 0)))) || 1000);
     const barScale = d3.scaleSqrt().domain([0, maxAbs]).range([0, laneHeight / 2 - 6]);
@@ -354,7 +354,7 @@
     const selectedAftershock = new Set(aftershock.impacted.map((item) => item.round));
     const isPreviewing = Boolean(state.hoverRound && state.hoverRound !== state.currentRound);
 
-    renderDeltaAftershockBand(root, barBand, aftershock.impacted, innerHeight);
+    renderDeltaAftershockBand(root, barBand, aftershock.impacted, innerHeight, headerHeight);
     renderDeltaColumnHighlights(root, deltaRows, barBand, innerWidth, innerHeight, selectedAftershock, focusRound);
     renderDeltaColumnHeaders(root, deltaRows, barBand, headerHeight, focusRound);
     renderDeltaFocusLine(root, barBand, focusRound, innerHeight, isPreviewing);
@@ -372,10 +372,11 @@
   function renderDeltaLane(root, rows, teamKey, offsetY, laneHeight, barBand, barScale, impactedSet, focusRound) {
     const lane = root.append('g').attr('transform', `translate(0,${offsetY})`);
     const baselineY = laneHeight / 2;
+    const labelX = -18;
     lane.append('line').attr('class', 'eco-delta-baseline').attr('x1', 0).attr('x2', barBand.range()[1]).attr('y1', baselineY).attr('y2', baselineY);
-    lane.append('text').attr('class', 'eco-lane-title').attr('x', -56).attr('y', baselineY - 12).text(getTeamLabel(teamKey));
-    lane.append('text').attr('class', 'eco-lane-copy').attr('x', -56).attr('y', baselineY + 2).text('heavier');
-    lane.append('text').attr('class', 'eco-lane-copy').attr('x', -56).attr('y', baselineY + 40).text('lighter');
+    lane.append('text').attr('class', 'eco-lane-title').attr('x', labelX).attr('y', baselineY - 12).text(getTeamLabel(teamKey));
+    lane.append('text').attr('class', 'eco-lane-copy').attr('x', labelX).attr('y', baselineY + 2).text('heavier');
+    lane.append('text').attr('class', 'eco-lane-copy').attr('x', labelX).attr('y', baselineY + 40).text('lighter');
 
     rows.forEach((row) => {
       const entry = row[teamKey];
@@ -485,18 +486,18 @@
       header.append('text')
         .attr('class', `eco-chart-round-label${isSelected ? ' is-selected' : ''}${isPreview ? ' is-preview' : ''}`)
         .attr('x', centerX)
-        .attr('y', 18)
+        .attr('y', 17)
         .attr('text-anchor', 'middle')
         .text(`R${row.round}`);
 
-      renderChartBuyTag(header, centerX, 30, 'vitality', row.vitality.buyTier);
-      renderChartBuyTag(header, centerX, 56, 'mongolz', row.mongolz.buyTier);
+      renderChartBuyTag(header, centerX, 28, 'vitality', row.vitality.buyTier);
+      renderChartBuyTag(header, centerX, 54, 'mongolz', row.mongolz.buyTier);
 
       if (row.round === focusRound) {
         header.append('text')
           .attr('class', 'eco-chart-focus-copy')
           .attr('x', centerX)
-          .attr('y', 82)
+          .attr('y', 94)
           .attr('text-anchor', 'middle')
           .text(row.half === 1 ? '1st half' : '2nd half');
       }
@@ -991,7 +992,7 @@
     return parts.join(' / ');
   }
 
-  function renderDeltaAftershockBand(root, barBand, impactedRounds, innerHeight) {
+  function renderDeltaAftershockBand(root, barBand, impactedRounds, innerHeight, headerHeight) {
     if (!impactedRounds.length) return;
     const firstX = barBand(String(impactedRounds[0].round));
     const lastX = barBand(String(impactedRounds[impactedRounds.length - 1].round));
@@ -1006,11 +1007,22 @@
       .attr('width', Math.max(width, 0))
       .attr('height', innerHeight - 12)
       .attr('rx', 18);
+    const labelText = width < 106 ? 'Affected' : 'Affected rounds';
+    const pillWidth = labelText === 'Affected' ? 70 : 120;
+    const pillX = left + Math.max(8, Math.min(14, width - pillWidth - 8));
+    const pillY = headerHeight - 26;
+    root.append('rect')
+      .attr('class', 'eco-aftershock-band-pill')
+      .attr('x', pillX)
+      .attr('y', pillY)
+      .attr('width', Math.min(pillWidth, Math.max(width - 10, 56)))
+      .attr('height', 18)
+      .attr('rx', 9);
     root.append('text')
       .attr('class', 'eco-aftershock-band-label')
-      .attr('x', left + 10)
-      .attr('y', 24)
-      .text('Affected rounds');
+      .attr('x', pillX + 9)
+      .attr('y', pillY + 12)
+      .text(labelText);
   }
 
   function renderDeltaFocusLine(root, barBand, focusRound, innerHeight, isPreviewing) {

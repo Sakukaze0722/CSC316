@@ -491,8 +491,8 @@
               <button class="ul-btn" id="ulReplayBtn">&#10227; Replay</button>
             </div>
             <div class="ul-control-group">
-              <label>Speed</label>
-              <select class="ul-select" id="ulSpeedSelect">
+              <label for="ulSpeedSelect">Speed</label>
+              <select class="ul-select" id="ulSpeedSelect" aria-label="Utility replay speed">
                 <option value="9000">0.5x</option>
                 <option value="4500" selected>1x</option>
                 <option value="2250">2x</option>
@@ -614,6 +614,15 @@
             </div>
             <div class="kv-control-group">
               <button class="kv-btn" id="kvReplayBtn">&#10227; Replay</button>
+            </div>
+            <div class="kv-control-group">
+              <label for="kvSpeedSelect">Speed</label>
+              <select class="ul-select kv-select" id="kvSpeedSelect" aria-label="Kill replay speed">
+                <option value="9000">0.5x</option>
+                <option value="4500" selected>1x</option>
+                <option value="2250">2x</option>
+                <option value="1200">4x</option>
+              </select>
             </div>
             <div class="kv-stat-badge" id="kvStatBadge">0 kills</div>
           </div>

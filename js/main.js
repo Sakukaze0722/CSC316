@@ -477,6 +477,7 @@ function setThemedRadarImage(imgEl, rawSrc) {
   let hotspotPulseRAF = null;
   let currentClusters = [];
   let hoveredCluster = null;
+  const ALL_UTIL_TYPES = ["smoke", "flash", "he", "molotov"];
 
   const canvas = document.getElementById("ulTrailCanvas");
   const ctx = canvas.getContext("2d");
@@ -486,6 +487,17 @@ function setThemedRadarImage(imgEl, rawSrc) {
   const ulMapArea = mapContainer.closest(".ul-map-area");
   const tooltip = document.getElementById("ulTooltip");
   const radarImg = document.getElementById("ulRadarImg");
+  const buyCards = document.getElementById("utilBuyCards");
+  const selectAllBtn = document.getElementById("utilBuySelectAll");
+
+  function syncBuyCardUI() {
+    const allSelected = filters.types.size === ALL_UTIL_TYPES.length;
+    if (selectAllBtn) selectAllBtn.classList.toggle("active", allSelected);
+    if (!buyCards) return;
+    buyCards.querySelectorAll(".util-buy-card").forEach(c => {
+      c.classList.toggle("active", filters.types.has(c.dataset.util));
+    });
+  }
 
   function getFilteredTrajectories() {
     if (!allData || !allData.maps[currentMap]) return [];
@@ -975,6 +987,14 @@ function setThemedRadarImage(imgEl, rawSrc) {
   }
 
   function switchMap(mapName) {
+    if (animRAF) {
+      cancelAnimationFrame(animRAF);
+      animRAF = null;
+    }
+    stopHotspotPulse();
+    currentClusters = [];
+    hideTooltip();
+
     currentMap = mapName;
     document.querySelectorAll(".ul-map-tab").forEach(tab => {
       tab.classList.toggle("active", tab.dataset.map === mapName);
@@ -983,7 +1003,7 @@ function setThemedRadarImage(imgEl, rawSrc) {
     // Reset filters
     filters.side = "all";
     filters.match = "all";
-    filters.types = new Set(["smoke", "flash", "he", "molotov"]);
+    filters.types = new Set(ALL_UTIL_TYPES);
     filters.player = "all";
     document.querySelectorAll("#ulSideFilter .ul-filter-btn, #ulPlayerFilter .ul-filter-btn").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.value === "all");
@@ -1026,24 +1046,13 @@ function setThemedRadarImage(imgEl, rawSrc) {
     bindFilterGroup("ulPlayerFilter", "player");
 
     // Buy-screen utility guide cards — multi-select with compact Select All toggle
-    const ALL_TYPES = ["smoke", "flash", "he", "molotov"];
-    const buyCards = document.getElementById("utilBuyCards");
-    const selectAllBtn = document.getElementById("utilBuySelectAll");
-    function syncBuyCardUI() {
-      const allSelected = filters.types.size === 4;
-      if (selectAllBtn) selectAllBtn.classList.toggle("active", allSelected);
-      if (!buyCards) return;
-      buyCards.querySelectorAll(".util-buy-card").forEach(c => {
-        c.classList.toggle("active", filters.types.has(c.dataset.util));
-      });
-    }
     if (selectAllBtn) {
       selectAllBtn.addEventListener("click", () => {
-        if (filters.types.size === 4) {
+        if (filters.types.size === ALL_UTIL_TYPES.length) {
           filters.types.clear();
           filters.types.add("smoke");
         } else {
-          ALL_TYPES.forEach(t => filters.types.add(t));
+          ALL_UTIL_TYPES.forEach(t => filters.types.add(t));
         }
         syncBuyCardUI();
         updateVisualization();
@@ -1060,7 +1069,7 @@ function setThemedRadarImage(imgEl, rawSrc) {
           filters.types.add(utilValue);
         }
         if (filters.types.size === 0) {
-          ALL_TYPES.forEach(t => filters.types.add(t));
+          ALL_UTIL_TYPES.forEach(t => filters.types.add(t));
         }
         syncBuyCardUI();
         updateVisualization();
@@ -1554,10 +1563,12 @@ function setThemedRadarImage(imgEl, rawSrc) {
     const sorted = kills.slice().sort((a, b) => a.tick - b.tick);
     const n = sorted.length;
 
-    const ARC_DUR = 120; // Laser travel time (very fast)
-    const maxTotal = 4000;
-    const interval = Math.max(8, (maxTotal - ARC_DUR) / n); // slightly slower interval
-    const totalDuration = (n - 1) * interval + ARC_DUR + 1000;
+    const speedSelect = document.getElementById("kvSpeedSelect");
+    const maxTotal = speedSelect ? parseInt(speedSelect.value, 10) : 4500;
+    const ARC_DUR = Math.max(70, maxTotal * 0.028);
+    const interval = Math.max(3, (maxTotal - ARC_DUR) / n);
+    const tailMs = Math.max(180, maxTotal * 0.24);
+    const totalDuration = (n - 1) * interval + ARC_DUR + tailMs;
 
     const startTime = performance.now();
     const progresses = new Float32Array(n);
@@ -1653,6 +1664,13 @@ function setThemedRadarImage(imgEl, rawSrc) {
     document.getElementById("kvReplayBtn").addEventListener("click", () => {
       updateVisualization();
     });
+
+    const kvSpeedSelect = document.getElementById("kvSpeedSelect");
+    if (kvSpeedSelect) {
+      kvSpeedSelect.addEventListener("change", () => {
+        if (isSectionVisible) updateVisualization();
+      });
+    }
 
     // Filters
     kvBindFilter("kvSideFilter", "side");

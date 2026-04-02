@@ -1737,15 +1737,60 @@ function setThemedRadarImage(imgEl, rawSrc) {
   const playerCtx = playerCanvas.getContext("2d");
   const mcRadarImg = document.getElementById("mcRadarImg");
 
-  // Color LUT
+  // Color LUT (T red ← contested purple → CT blue)
   const COLOR_LUT = new Uint8ClampedArray(256 * 4);
   (function buildLUT() {
+    function tSide(v) {
+      const absV = Math.abs(v);
+      const s = Math.min(absV, 1);
+      const t = 1 - s;
+      return [
+        Math.round(218 + 37 * t),
+        Math.round(54 + 69 * t),
+        Math.round(51 + 63 * t),
+        Math.round(15 + 195 * s)
+      ];
+    }
+    function ctSide(v) {
+      const s = Math.min(v, 1);
+      const t = 1 - s;
+      return [
+        Math.round(88 - 57 * s),
+        Math.round(166 - 30 * s),
+        255,
+        Math.round(15 + 195 * s)
+      ];
+    }
+    const CONTESTED_RGB = [167, 139, 250];
+    const BAND = 0.13;
     for (let i = 0; i < 256; i++) {
       const v = (i / 255) * 2 - 1;
       const idx = i * 4;
-      const absV = Math.abs(v);
-      if (v <= 0) {
-        const s = Math.min(absV, 1);
+      const av = Math.abs(v);
+      if (av < BAND) {
+        const u = (v + BAND) / (2 * BAND);
+        const left = tSide(-BAND);
+        const right = ctSide(BAND);
+        let r, g, b, a;
+        if (u <= 0.5) {
+          const w = u / 0.5;
+          r = Math.round(left[0] * (1 - w) + CONTESTED_RGB[0] * w);
+          g = Math.round(left[1] * (1 - w) + CONTESTED_RGB[1] * w);
+          b = Math.round(left[2] * (1 - w) + CONTESTED_RGB[2] * w);
+          a = Math.round(left[3] * (1 - w) + 135 * w);
+        } else {
+          const w = (u - 0.5) / 0.5;
+          r = Math.round(CONTESTED_RGB[0] * (1 - w) + right[0] * w);
+          g = Math.round(CONTESTED_RGB[1] * (1 - w) + right[1] * w);
+          b = Math.round(CONTESTED_RGB[2] * (1 - w) + right[2] * w);
+          a = Math.round(135 * (1 - w) + right[3] * w);
+        }
+        COLOR_LUT[idx] = r;
+        COLOR_LUT[idx + 1] = g;
+        COLOR_LUT[idx + 2] = b;
+        COLOR_LUT[idx + 3] = a;
+      } else if (v <= 0) {
+        const s = Math.min(av, 1);
         const t = 1 - s;
         COLOR_LUT[idx]     = Math.round(218 + 37 * t);
         COLOR_LUT[idx + 1] = Math.round(54 + 69 * t);
@@ -1974,11 +2019,16 @@ function setThemedRadarImage(imgEl, rawSrc) {
     const total = ctCount + tCount + neutralCount;
     const ctPct = total > 0 ? Math.round(ctCount / total * 100) : 0;
     const tPct = total > 0 ? Math.round(tCount / total * 100) : 0;
-    const nPct = 100 - ctPct - tPct;
-    document.getElementById("mcCtBar").style.width = `${Math.max(ctPct, 3)}%`;
-    document.getElementById("mcCtBar").textContent = `${ctPct}%`;
-    document.getElementById("mcTBar").style.width = `${Math.max(tPct, 3)}%`;
-    document.getElementById("mcTBar").textContent = `${tPct}%`;
+    const nPct = Math.max(0, 100 - ctPct - tPct);
+    const mcNeutralBar = document.getElementById("mcNeutralBar");
+    document.getElementById("mcTBar").style.width = `${tPct}%`;
+    document.getElementById("mcTBar").textContent = tPct > 0 ? `${tPct}%` : "";
+    if (mcNeutralBar) {
+      mcNeutralBar.style.width = `${nPct}%`;
+      mcNeutralBar.textContent = nPct > 0 ? `${nPct}%` : "";
+    }
+    document.getElementById("mcCtBar").style.width = `${ctPct}%`;
+    document.getElementById("mcCtBar").textContent = ctPct > 0 ? `${ctPct}%` : "";
     document.getElementById("mcCtPctLabel").textContent = `${ctPct}%`;
     document.getElementById("mcTPctLabel").textContent = `${tPct}%`;
     document.getElementById("mcNeutralPctLabel").textContent = `${nPct}%`;

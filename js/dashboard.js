@@ -142,6 +142,8 @@
   let audioCtx = null;
   let tooltipRAF = null;
   let particlesRAF = null;
+  let mapLayoutRAF = null;
+  let detailPanelTransitioning = false;
   let hoverMenuTimer = null;
   let radarMode = "global";
   let detailPlayerSort = "rating";
@@ -1139,6 +1141,43 @@
     geoPath = d3.geoPath().projection(projection);
   }
 
+  function refreshWorldMapLayout() {
+    if (!mapContainer) return;
+    const w = mapContainer.clientWidth || 960;
+    const h = mapContainer.clientHeight || 500;
+    if (!worldTopology || !svg) return;
+    svg.attr("viewBox", [0, 0, w, h]);
+    initProjection();
+    const countries = topojson.feature(worldTopology, worldTopology.objects.countries);
+    svg.selectAll("path.country").data(countries.features).attr("d", geoPath);
+    updateCountryLabels();
+    applyMapScale();
+    renderDrawer();
+  }
+
+  function scheduleWorldMapLayoutRefresh() {
+    [0, 220, 430].forEach((delay) => {
+      window.setTimeout(() => window.requestAnimationFrame(refreshWorldMapLayout), delay);
+    });
+  }
+
+  function setDetailPanelTransitioning(active) {
+    detailPanelTransitioning = active;
+  }
+
+  function initMapLayoutObserver() {
+    if (!("ResizeObserver" in window) || !mapContainer) return;
+    const observer = new ResizeObserver(() => {
+      if (detailPanelTransitioning) return;
+      if (mapLayoutRAF) cancelAnimationFrame(mapLayoutRAF);
+      mapLayoutRAF = window.requestAnimationFrame(() => {
+        mapLayoutRAF = null;
+        refreshWorldMapLayout();
+      });
+    });
+    observer.observe(mapContainer);
+  }
+
   function mapViewportSize() {
     if (!svg) return { width: 960, height: 500 };
     const vb = (svg.attr("viewBox") || "0 0 960 500").match(/-?\d+(?:\.\d+)?/g)?.map(Number) || [0, 0, 960, 500];
@@ -1153,12 +1192,12 @@
   function mapPanLimits() {
     const { width, height } = mapViewportSize();
     const baseX = width * 0.1;
-    const baseY = height * 0.08;
+    const baseY = height * 0.18;
     const zoomX = Math.max(0, (mapScale - 1) * width * 0.5);
     const zoomY = Math.max(0, (mapScale - 1) * height * 0.5);
     return {
-      x: Math.min(width * 0.24, baseX + zoomX),
-      y: Math.min(height * 0.2, baseY + zoomY),
+      x: baseX + zoomX,
+      y: baseY + zoomY,
     };
   }
 
@@ -1600,7 +1639,6 @@
     }
 
     const flag = flagImg(profile.country);
-    const trend = profile.players.slice(0, 12).map((p) => p.rating);
     detailTitle.textContent = `${flagEmoji(profile.country)} ${profile.country}`;
     const panelHtml = currentGame === "cs"
       ? `
@@ -1619,11 +1657,6 @@
           <div class="kpi-card"><span class="kpi-label">Avg Rounds / Player</span><span class="kpi-value">${d3.format(",.0f")(profile.totalRounds / Math.max(profile.playerCount, 1))}</span></div>
         </div>
 
-        <div class="sparkline-wrap">
-          <div class="sparkline-title">Top-player rating trend</div>
-          ${renderSparkline(trend, "#3b82f6")}
-        </div>
-
         <div class="country-player-controls">
           <input id="countryPlayerSearch" class="country-player-search" type="search" placeholder="Search players or teams">
           <div class="player-sort-group">
@@ -1631,6 +1664,12 @@
             <button class="player-sort-btn ${detailPlayerSort === "kd" ? "active" : ""}" data-sort="kd">K/D</button>
             <button class="player-sort-btn ${detailPlayerSort === "maps" ? "active" : ""}" data-sort="maps">Maps</button>
             <button class="player-sort-btn ${detailPlayerSort === "name" ? "active" : ""}" data-sort="name">Name</button>
+          </div>
+          <div class="player-sort-explainer">
+            <p><strong>Rating</strong>: Overall performance score. Higher usually means the player had more impact.</p>
+            <p><strong>K/D</strong>: Kill-to-death ratio. Above 1.00 means they get more kills than deaths.</p>
+            <p><strong>Maps</strong>: How many maps they have played in the dataset.</p>
+            <p><strong>Name</strong>: Sort players alphabetically by player name.</p>
           </div>
         </div>
       `
@@ -1648,11 +1687,6 @@
           <div class="kpi-card"><span class="kpi-label">Avg Win Rate</span><span class="kpi-value">${profile.avgWinRate.toFixed(1)}%</span></div>
           <div class="kpi-card"><span class="kpi-label">Avg K / D / A</span><span class="kpi-value">${profile.avgKills.toFixed(1)} / ${profile.avgDeaths.toFixed(1)} / ${profile.avgAssists.toFixed(1)}</span></div>
           <div class="kpi-card"><span class="kpi-label">Avg GPM / XPM</span><span class="kpi-value">${profile.avgGpm.toFixed(0)} / ${profile.avgXpm.toFixed(0)}</span></div>
-        </div>
-
-        <div class="sparkline-wrap">
-          <div class="sparkline-title">Top-player win-rate trend</div>
-          ${renderSparkline(trend, "#8b5cf6")}
         </div>
 
         <div class="country-player-controls">
@@ -1893,6 +1927,7 @@
 
     updateMapColors();
     renderCountryPanel(name);
+    setDetailPanelTransitioning(true);
     detailPanel.classList.remove("collapsed");
 
     const rect = mapContainer.getBoundingClientRect();
@@ -2273,10 +2308,26 @@
       </div>
 
       <div class="player-dash-kpis">
-        <div class="player-kpi-card"><span class="player-kpi-label">K/D</span><span class="player-kpi-value">${player.kd.toFixed(2)}</span></div>
-        <div class="player-kpi-card"><span class="player-kpi-label">K-D Diff</span><span class="player-kpi-value">${d3.format(",.0f")(player.kd_diff)}</span></div>
-        <div class="player-kpi-card"><span class="player-kpi-label">Maps</span><span class="player-kpi-value">${d3.format(",.0f")(player.total_maps)}</span></div>
-        <div class="player-kpi-card"><span class="player-kpi-label">Rounds</span><span class="player-kpi-value">${d3.format(",.0f")(player.total_rounds)}</span></div>
+        <div class="player-kpi-card">
+          <span class="player-kpi-label">K/D</span>
+          <span class="player-kpi-value">${player.kd.toFixed(2)}</span>
+          <span class="player-kpi-help">Kill-to-death ratio. Above 1.00 means more kills than deaths.</span>
+        </div>
+        <div class="player-kpi-card">
+          <span class="player-kpi-label">K-D Diff</span>
+          <span class="player-kpi-value">${d3.format(",.0f")(player.kd_diff)}</span>
+          <span class="player-kpi-help">Total kills minus total deaths across the dataset.</span>
+        </div>
+        <div class="player-kpi-card">
+          <span class="player-kpi-label">Maps</span>
+          <span class="player-kpi-value">${d3.format(",.0f")(player.total_maps)}</span>
+          <span class="player-kpi-help">How many maps this player appeared in.</span>
+        </div>
+        <div class="player-kpi-card">
+          <span class="player-kpi-label">Rounds</span>
+          <span class="player-kpi-value">${d3.format(",.0f")(player.total_rounds)}</span>
+          <span class="player-kpi-help">How many rounds this player played.</span>
+        </div>
       </div>
 
       <div class="player-viz-grid">
@@ -2398,7 +2449,7 @@
    */
   async function initWorldMap() {
     const w = mapContainer.clientWidth || 960;
-    const h = Math.max(500, window.innerHeight - 260);
+    const h = mapContainer.clientHeight || 500;
     svg = d3.select("#worldMap").append("svg").attr("viewBox", [0, 0, w, h]).attr("width", "100%").attr("height", "100%").style("background", "transparent");
     mapDefs = svg.append("defs");
     initProjection();
@@ -2431,6 +2482,7 @@
     setTimeout(() => {
       mapContainer.classList.remove("loading");
       mapContainer.querySelector(".map-loading")?.remove();
+      scheduleWorldMapLayoutRefresh();
     }, 760);
 
     applySelectionPulse();
@@ -2470,7 +2522,9 @@
   }
 
   function initGameToggle() {
-    document.querySelectorAll(".game-btn").forEach((btn) => {
+    const gameButtons = document.querySelectorAll(".game-btn");
+    if (!gameButtons.length) return;
+    gameButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         const game = btn.dataset.game;
         if (!game || game === currentGame) return;
@@ -2507,7 +2561,14 @@
   }
 
   function initDetailPanel() {
+    detailPanel?.addEventListener("transitionend", (event) => {
+      if (event.propertyName !== "width") return;
+      setDetailPanelTransitioning(false);
+      refreshWorldMapLayout();
+    });
+
     detailClose?.addEventListener("click", () => {
+      setDetailPanelTransitioning(true);
       detailPanel.classList.add("collapsed");
       selectedCountry = null;
       selectedCountryName = null;
@@ -2606,18 +2667,7 @@
   }
 
   function initResize() {
-    window.addEventListener("resize", () => {
-      if (!worldTopology || !svg) return;
-      const w = mapContainer.clientWidth || 960;
-      const h = Math.max(500, window.innerHeight - 260);
-      svg.attr("viewBox", [0, 0, w, h]);
-      initProjection();
-      const countries = topojson.feature(worldTopology, worldTopology.objects.countries);
-      svg.selectAll("path.country").data(countries.features).attr("d", geoPath);
-      updateCountryLabels();
-      applyMapScale();
-      renderDrawer();
-    });
+    window.addEventListener("resize", refreshWorldMapLayout);
   }
 
   async function init() {
@@ -2652,6 +2702,7 @@
       mapContainer.innerHTML = '<p style="color:#94a3b8;padding:2rem;text-align:center;">Failed to load world map. Please check your network connection.</p>';
     }
 
+    initMapLayoutObserver();
     initResize();
   }
 

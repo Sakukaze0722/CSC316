@@ -274,6 +274,7 @@ body[data-theme="light"] .theme-moon {
   position: relative;
   z-index: 1;
   display: flex;
+  align-items: flex-start;
   min-height: 520px;
   background: var(--dbg-main-bg);
   transition: background 0.4s;
@@ -284,6 +285,7 @@ body[data-theme="light"] .theme-moon {
 
 .map-wrapper {
   flex: 1;
+  min-width: 0;
   position: relative;
   padding: 0 1.5rem 1rem;
   display: flex;
@@ -323,7 +325,8 @@ body[data-theme="light"] .theme-moon {
 
 .world-map-container {
   flex: 1;
-  min-height: 500px;
+  min-height: 580px;
+  max-height: 580px;
   background: var(--dbg-map-bg);
   border-radius: 16px;
   overflow: hidden;
@@ -1022,6 +1025,10 @@ path.country.selected-pulse {
     flex-direction: column;
   }
 
+  .map-wrapper {
+    flex: 1;
+  }
+
   .detail-panel {
     width: 100%;
     border-left: none;
@@ -1081,6 +1088,25 @@ path.country.selected-pulse {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.player-sort-explainer {
+  display: grid;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 0.73rem;
+  color: var(--dbg-panel-text);
+  opacity: 0.9;
+}
+
+.player-sort-explainer p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.player-sort-explainer strong {
+  color: var(--dbg-btn-hover);
+  font-weight: 700;
 }
 
 .player-sort-btn {
@@ -1575,6 +1601,15 @@ path.country.selected-pulse {
   margin-top: 2px;
   font-size: 1.02rem;
   font-weight: 700;
+}
+
+.player-kpi-help {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.69rem;
+  line-height: 1.4;
+  color: var(--dbg-panel-text);
+  opacity: 0.85;
 }
 
 .player-viz-grid {

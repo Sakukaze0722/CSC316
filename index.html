@@ -62,21 +62,24 @@
       </h1>
       <p class="hero-desc">
         Counter-Strike is the world&rsquo;s longest-running competitive FPS &mdash; born in 2000 as a Half-Life mod and now a global esport with $40M+ in annual prize money. Every match generates thousands of positional, economic, and combat data points. We transform that raw telemetry into interactive visualizations that reveal how the best teams in the world control territory, deploy utility, and win rounds.
+        <span class="hero-desc-rules">
+          <strong>How pro matches work:</strong> CS2 uses MR12: up to twelve rounds per half, then teams swap between T and CT. The first team to win thirteen rounds secures the map (with overtime if tied). You win a round by eliminating the enemy, detonating the bomb, or defusing it in time. Money rolls over between rounds &mdash; loss bonus and round outcomes decide whether squads full-buy rifles and utility or run an eco. Freeze time, buy zones, and bomb timers structure every decision &mdash; the data we explore below.
+        </span>
       </p>
       <div class="hero-stats">
-        <div class="hero-stat">
+        <div class="hero-stat hero-stat--teams">
           <span class="hero-stat-num" id="heroStatTeams">0</span>
           <span class="hero-stat-label">Pro Teams Tracked</span>
         </div>
-        <div class="hero-stat">
+        <div class="hero-stat hero-stat--rounds">
           <span class="hero-stat-num" id="heroStatRounds">0</span>
           <span class="hero-stat-label">Rounds Analyzed</span>
         </div>
-        <div class="hero-stat">
+        <div class="hero-stat hero-stat--nades">
           <span class="hero-stat-num" id="heroStatNades">0</span>
           <span class="hero-stat-label">Grenades Mapped</span>
         </div>
-        <div class="hero-stat">
+        <div class="hero-stat hero-stat--kills">
           <span class="hero-stat-num" id="heroStatKills">0</span>
           <span class="hero-stat-label">Kill Vectors</span>
         </div>

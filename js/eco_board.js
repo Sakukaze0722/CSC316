@@ -258,11 +258,11 @@
   function renderContextPanel(transition, vitalitySummary, mongolzSummary, isPreviewing) {
     return `
       <div class="eco-context-grid">
+        ${renderImpactCenter(transition, isPreviewing)}
         <div class="eco-context-compare">
           ${renderImpactTeamCard('vitality', transition, vitalitySummary)}
           ${renderImpactTeamCard('mongolz', transition, mongolzSummary)}
         </div>
-        ${renderImpactCenter(transition, isPreviewing)}
       </div>
     `;
   }

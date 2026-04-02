@@ -3,91 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Team Economic Info — CS2 Eco Board</title>
+  <title>Economy Cause-and-Effect Board - CS2 Grand Final</title>
   <link rel="stylesheet" href="css/style.css?v=4">
   <link rel="stylesheet" href="css/dashboard.css?v=4">
-  <link rel="stylesheet" href="css/eco_board.css?v=1">
+  <link rel="stylesheet" href="css/eco_board.css?v=5">
 </head>
-<body class="dashboard-body eco-board-page" data-theme="dark">
+<body class="dashboard-body eco-board-page" data-theme="light">
   <header class="dashboard-header eco-board-header">
     <div class="header-inner">
-      <h1 class="dashboard-title">Team Economic Info</h1>
+      <div class="eco-header-copy">
+        <p class="eco-kicker">Visualization 5</p>
+        <h1 class="dashboard-title">Economy Cause-and-Effect Board</h1>
+        <p class="eco-subtitle" id="ecoSubtitle">
+          Vitality vs The MongolZ - BLAST.tv Austin Major 2025 Grand Final
+        </p>
+      </div>
     </div>
   </header>
 
-  <main class="eco-board-main">
-    <!-- Round navigation -->
-    <section class="eco-round-nav">
-      <button type="button" class="eco-nav-btn" id="btnLastRound" aria-label="Previous round">← Last Round</button>
-      <div class="eco-round-input-wrap">
-        <span class="eco-round-label">Round</span>
-        <input type="number" id="currentRound" class="eco-round-input" min="1" value="1" aria-label="Current round">
-      </div>
-      <button type="button" class="eco-nav-btn" id="btnNextRound" aria-label="Next round">Next Round →</button>
-    </section>
-
-    <!-- Side selector (T/CT affects Molotov vs Incendiary price) -->
-    <section class="eco-side-select">
-      <label>Side</label>
-      <div class="eco-side-btns">
-        <button type="button" class="eco-side-btn active" data-side="T">T</button>
-        <button type="button" class="eco-side-btn" data-side="CT">CT</button>
+  <main class="eco-main">
+    <section class="eco-storyboard">
+      <div class="eco-storyboard-copy">
+        <p class="eco-storyboard-kicker">Visual Focus</p>
+        <h2>Read the buy, then read the next round.</h2>
+        <p>
+          This board treats economy as a chain of strategic consequences instead of a pile of weapons.
+          Each round shows what both teams bought, how much heavier or lighter the next setup became,
+          and whether the pressure lasted beyond a single exchange.
+        </p>
       </div>
     </section>
 
-    <!-- 5 Player cards -->
-    <section class="eco-players-grid" id="playersGrid">
-      <!-- Filled by JS: Player1..5 with money + Main/Pistol/Equipment/Grenades -->
+    <section class="eco-command-bar">
+      <nav class="eco-map-tabs" id="ecoMapTabs" aria-label="Map selector" role="tablist">
+        <button class="eco-map-tab active" data-map="de_mirage" role="tab" aria-selected="true" type="button">
+          <span class="eco-map-name">Mirage</span>
+          <span class="eco-tab-score" id="score-de_mirage"></span>
+        </button>
+        <button class="eco-map-tab" data-map="de_dust2" role="tab" aria-selected="false" type="button">
+          <span class="eco-map-name">Dust II</span>
+          <span class="eco-tab-score" id="score-de_dust2"></span>
+        </button>
+        <button class="eco-map-tab" data-map="de_inferno" role="tab" aria-selected="false" type="button">
+          <span class="eco-map-name">Inferno</span>
+          <span class="eco-tab-score" id="score-de_inferno"></span>
+        </button>
+      </nav>
+
+      <div class="eco-command-copy" id="ecoMapMeta">
+        Mirage - The MongolZ won 13-5
+      </div>
     </section>
 
-    <!-- Design: outcome | stats | strategy + recommend -->
-    <section class="eco-bottom-section">
-      <div class="eco-outcome-block">
-        <h3>Round outcome</h3>
-        <button type="button" class="eco-outcome-btn" id="btnSimulateWin" title="Simulate round win">Win +<span id="winBonus">3250</span></button>
-        <button type="button" class="eco-outcome-btn" id="btnSimulateLoss" title="Simulate round loss">Loss +<span id="lossBonus">1400</span></button>
-        <span id="lossBonusMax" class="sr-only"></span>
-      </div>
-      <div class="eco-stats-block">
-        <h3>Team economy</h3>
-        <ul class="eco-summary-list">
-          <li>Average Team Economy: <strong id="avgEconomy">0</strong></li>
-          <li>Total Equipment Value: <strong id="totalEquipment">0</strong></li>
-          <li>Next Round Average: <strong id="nextRoundAvg">0</strong></li>
-        </ul>
-      </div>
-      <div class="eco-strategy-block">
-        <h3>Buy strategy</h3>
-        <div class="eco-strategy-btns">
-          <button type="button" class="eco-strategy-btn" data-strategy="eco">Eco</button>
-          <button type="button" class="eco-strategy-btn active" data-strategy="halfbuy">Half Buy</button>
-          <button type="button" class="eco-strategy-btn" data-strategy="fullbuy">Full-Buy</button>
+    <section class="eco-timeline-panel">
+      <div class="eco-panel-head">
+        <div>
+          <h2 class="eco-section-title">Round Strategy Timeline</h2>
+          <p class="eco-section-copy">
+            Click a round to lock the impact view. Hover a round to preview the strategy shift before
+            reading the chart in detail.
+          </p>
+          <p class="eco-section-hint">Hover or click any buy label for a quick plain-language explanation.</p>
         </div>
-        <div class="eco-recommend-inline">
-          <span class="eco-recommend-label">Recommend combination:</span>
-          <div class="eco-recommend-content" id="recommendContent">
-            <p class="eco-recommend-placeholder">Choose a strategy</p>
-            <div class="eco-recommend-items" id="recommendItems"></div>
-            <span class="eco-recommend-equals">=</span>
-            <div class="eco-recommend-total" id="recommendTotal"></div>
-          </div>
+        <div class="eco-round-current">
+          <span class="eco-round-caption" id="ecoRoundCaption">Selected round</span>
+          <strong class="eco-round-label" id="ecoRoundLabel">Round 1</strong>
+          <span class="eco-round-context" id="ecoRoundContext">Loading round context...</span>
         </div>
       </div>
+
+      <div class="eco-tier-legend-strip" id="ecoGlossaryGrid"></div>
+      <div class="eco-round-timeline" id="ecoRoundTimeline" role="listbox" aria-label="Round strategy timeline"></div>
     </section>
 
-    <!-- Next round win rate prediction (same as dashboard sidebar) -->
-    <section class="eco-prediction-section">
-      <h3>Next round win rate prediction</h3>
-      <p class="eco-prediction-desc">Based on round outcomes and team economy. Solid = actual result (win/loss); hollow = predicted win rate for next round.</p>
-      <div id="ecoWinRateChart" class="eco-prediction-chart" aria-label="Win rate prediction line chart"></div>
-      <div class="eco-prediction-legend">
-        <span class="eco-legend-item eco-legend-actual"><span class="eco-legend-dot eco-legend-dot-solid"></span> Actual</span>
-        <span class="eco-legend-item eco-legend-pred"><span class="eco-legend-dot eco-legend-dot-hollow"></span> Predicted (next)</span>
+    <section class="eco-delta-panel eco-delta-panel-primary">
+      <div class="eco-panel-head">
+        <div>
+          <h2 class="eco-section-title">Economy Delta Chart</h2>
+          <p class="eco-section-copy">
+            Equipment-value change versus the previous round. Positive bars mean a heavier setup than
+            the round before; negative bars mark a downgrade or save.
+          </p>
+          <p class="eco-section-hint">Hover or click a bar to preview and pin that round directly from the chart.</p>
+        </div>
       </div>
+      <div id="ecoDeltaChart" class="eco-delta-chart" aria-label="Economy delta chart"></div>
     </section>
+
+    <section class="eco-context-panel" id="ecoContextPanel"></section>
   </main>
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="js/eco_board.js"></script>
+  <div class="eco-floating-tooltip" id="ecoBuyTooltip" aria-hidden="true"></div>
 </body>
 </html>

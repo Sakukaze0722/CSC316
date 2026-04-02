@@ -1165,6 +1165,15 @@
     detailPanelTransitioning = active;
   }
 
+  function placeDetailPanelByPointer(clientX) {
+    if (!detailPanel || !mapContainer || !Number.isFinite(clientX)) return;
+    const rect = mapContainer.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const placeOnRight = clientX < centerX;
+    detailPanel.classList.toggle("side-right", placeOnRight);
+    detailPanel.classList.toggle("side-left", !placeOnRight);
+  }
+
   function initMapLayoutObserver() {
     if (!("ResizeObserver" in window) || !mapContainer) return;
     const observer = new ResizeObserver(() => {
@@ -1928,6 +1937,7 @@
     updateMapColors();
     renderCountryPanel(name);
     setDetailPanelTransitioning(true);
+    placeDetailPanelByPointer(event.clientX);
     detailPanel.classList.remove("collapsed");
 
     const rect = mapContainer.getBoundingClientRect();
@@ -2560,6 +2570,10 @@
   }
 
   function initDetailPanel() {
+    if (detailPanel) {
+      detailPanel.classList.add("side-right");
+    }
+
     detailPanel?.addEventListener("transitionend", (event) => {
       if (event.propertyName !== "opacity") return;
       setDetailPanelTransitioning(false);

@@ -2302,7 +2302,7 @@
           <div class="player-dash-country">${flag ? `<img class="flag-image player-flag" src="${flag}" alt="${esc(displayCountry)} flag">` : ""}<span>${esc(flagEmoji(displayCountry))} ${esc(displayCountry)}</span></div>
           ${teamLine ? `<div class="player-current-team">Current team: ${esc(teamLine)}</div>` : ""}
           <div class="player-dash-links"><a class="hltv-link" href="${hltvUrl}" target="_blank" rel="noopener">View on HLTV</a></div>
-          <div class="player-dash-teams">${player.teams.slice(0, 8).map((t) => `<button class="team-chip" type="button">${esc(t)}</button>`).join("")}</div>
+          <div class="player-dash-teams">${player.teams.slice(0, 8).map((t) => `<span class="team-chip">${esc(t)}</span>`).join("")}</div>
         </div>
         <div class="player-rating-pill">Rating ${player.rating.toFixed(2)}</div>
       </div>
@@ -2363,7 +2363,6 @@
       });
     });
 
-    playerModalContent.querySelectorAll(".team-chip").forEach((chip) => chip.addEventListener("click", () => chip.classList.toggle("active")));
     playerModalContent.querySelectorAll(".player-hltv-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
         const hint = chip.dataset.hint;
@@ -2562,7 +2561,7 @@
 
   function initDetailPanel() {
     detailPanel?.addEventListener("transitionend", (event) => {
-      if (event.propertyName !== "width") return;
+      if (event.propertyName !== "opacity") return;
       setDetailPanelTransitioning(false);
       refreshWorldMapLayout();
     });

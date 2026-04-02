@@ -10,39 +10,44 @@ body.dashboard-body {
 
 body.dashboard-body,
 body.dashboard-body[data-theme="dark"] {
-  --dbg-bg: #0a0f1a;
-  --dbg-bg-overlay: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
-  --dbg-header-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%);
-  --dbg-header-border: rgba(51, 65, 85, 0.6);
-  --dbg-title-gradient: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-  --dbg-toggle-bg: rgba(30, 41, 59, 0.8);
-  --dbg-toggle-border: rgba(51, 65, 85, 0.8);
-  --dbg-btn-color: #94a3b8;
-  --dbg-btn-hover: #f8fafc;
+  /* True black–based dark UI; overlay = whisper-soft colored glows (still mostly black) */
+  --dbg-bg: #000000;
+  --dbg-bg-overlay:
+    radial-gradient(ellipse 85% 55% at 12% 8%, rgba(59, 130, 246, 0.06) 0%, transparent 52%),
+    radial-gradient(ellipse 75% 48% at 88% 18%, rgba(139, 92, 246, 0.045) 0%, transparent 50%),
+    radial-gradient(ellipse 65% 50% at 78% 88%, rgba(20, 184, 166, 0.035) 0%, transparent 48%),
+    radial-gradient(ellipse 70% 45% at 8% 72%, rgba(244, 63, 94, 0.025) 0%, transparent 46%),
+    radial-gradient(ellipse 80% 50% at 50% -18%, rgba(255, 255, 255, 0.028) 0%, transparent 50%);
+  --dbg-header-bg: linear-gradient(135deg, rgba(0, 0, 0, 0.98) 0%, rgba(18, 18, 18, 0.96) 100%);
+  --dbg-header-border: rgba(255, 255, 255, 0.08);
+  --dbg-title-gradient: linear-gradient(135deg, #ffffff 0%, #a3a3a3 100%);
+  --dbg-toggle-bg: rgba(24, 24, 24, 0.95);
+  --dbg-toggle-border: rgba(255, 255, 255, 0.1);
+  --dbg-btn-color: #a3a3a3;
+  --dbg-btn-hover: #fafafa;
   --dbg-main-bg: transparent;
-  --dbg-game-bg: rgba(30, 41, 59, 0.6);
-  --dbg-game-border: rgba(51, 65, 85, 0.5);
-  --dbg-hint: #64748b;
-  --dbg-map-bg: linear-gradient(145deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
-  --dbg-map-border: rgba(51, 65, 85, 0.5);
-  --dbg-map-country-stroke: rgba(255, 255, 255, 0.15);
-  --dbg-loading-bg: rgba(30, 41, 59, 0.8);
-  --dbg-loading-color: #94a3b8;
-  --dbg-tooltip-bg: linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-  --dbg-tooltip-border: rgba(59, 130, 246, 0.3);
-  --dbg-tooltip-color: #f8fafc;
-  --dbg-tooltip-arrow: rgba(30, 41, 59, 0.98);
-  --dbg-panel-bg: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-  --dbg-panel-border: rgba(51, 65, 85, 0.6);
-  --dbg-panel-title: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
-  --dbg-panel-text: #94a3b8;
-  --dbg-panel-placeholder: #64748b;
-  --dbg-close-bg: rgba(51, 65, 85, 0.8);
-  --dbg-close-color: #94a3b8;
-  --dbg-footer-bg: rgba(15, 23, 42, 0.8);
-  --dbg-footer-color: #64748b;
-  --dbg-footer-border: rgba(51, 65, 85, 0.4);
+  --dbg-game-bg: rgba(20, 20, 20, 0.75);
+  --dbg-game-border: rgba(255, 255, 255, 0.08);
+  --dbg-hint: #737373;
+  --dbg-map-bg: linear-gradient(145deg, rgba(14, 14, 14, 0.98) 0%, rgba(0, 0, 0, 0.99) 100%);
+  --dbg-map-border: rgba(255, 255, 255, 0.1);
+  --dbg-map-country-stroke: rgba(255, 255, 255, 0.14);
+  --dbg-loading-bg: rgba(10, 10, 10, 0.92);
+  --dbg-loading-color: #a3a3a3;
+  --dbg-tooltip-bg: linear-gradient(135deg, rgba(22, 22, 22, 0.98) 0%, rgba(8, 8, 8, 0.99) 100%);
+  --dbg-tooltip-border: rgba(255, 255, 255, 0.12);
+  --dbg-tooltip-color: #fafafa;
+  --dbg-tooltip-arrow: rgba(18, 18, 18, 0.98);
+  --dbg-panel-bg: linear-gradient(180deg, rgba(20, 20, 20, 0.98) 0%, rgba(5, 5, 5, 0.99) 100%);
+  --dbg-panel-border: rgba(255, 255, 255, 0.1);
+  --dbg-panel-title: linear-gradient(135deg, #ffffff 0%, #d4d4d4 100%);
+  --dbg-panel-text: #a3a3a3;
+  --dbg-panel-placeholder: #525252;
+  --dbg-close-bg: rgba(38, 38, 38, 0.95);
+  --dbg-close-color: #a3a3a3;
+  --dbg-footer-bg: rgba(0, 0, 0, 0.88);
+  --dbg-footer-color: #737373;
+  --dbg-footer-border: rgba(255, 255, 255, 0.06);
 }
 
 /* ---------- CSS Variables: Light Mode ---------- */
@@ -137,6 +142,13 @@ body[data-theme="light"] .hero-glow--1 {
 }
 body[data-theme="light"] .hero-glow--2 {
   background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
+}
+
+body.dashboard-body[data-theme="dark"] .hero-glow--1 {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.055) 0%, transparent 70%);
+}
+body.dashboard-body[data-theme="dark"] .hero-glow--2 {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
 }
 
 /* Nav bar floating at top */
@@ -256,12 +268,26 @@ body[data-theme="light"] .hero-tag { color: #2563eb; }
 .hero-desc {
   font-size: 1.02rem;
   line-height: 1.75;
-  max-width: 680px;
+  max-width: 720px;
   color: var(--dbg-panel-text);
   transition: color 0.4s;
 }
+.hero-desc-rules {
+  display: block;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--dbg-panel-border) 80%, transparent);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--dbg-hint);
+  transition: color 0.4s, border-color 0.4s;
+}
+.hero-desc-rules strong {
+  color: var(--dbg-btn-hover);
+  font-weight: 700;
+}
 
-/* Stat counters */
+/* Stat counters — one accent per metric */
 .hero-stats {
   display: flex;
   gap: 2rem;
@@ -279,7 +305,6 @@ body[data-theme="light"] .hero-tag { color: #2563eb; }
   font-size: 1.75rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: var(--dbg-btn-hover);
   transition: color 0.4s;
 }
 .hero-stat-label {
@@ -287,9 +312,26 @@ body[data-theme="light"] .hero-tag { color: #2563eb; }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--dbg-hint);
   transition: color 0.4s;
 }
+/* Dark theme (default): bright accents */
+.hero-stat--teams .hero-stat-num { color: #38bdf8; }
+.hero-stat--teams .hero-stat-label { color: rgba(56, 189, 248, 0.82); }
+.hero-stat--rounds .hero-stat-num { color: #fbbf24; }
+.hero-stat--rounds .hero-stat-label { color: rgba(251, 191, 36, 0.85); }
+.hero-stat--nades .hero-stat-num { color: #34d399; }
+.hero-stat--nades .hero-stat-label { color: rgba(52, 211, 153, 0.82); }
+.hero-stat--kills .hero-stat-num { color: #fb7185; }
+.hero-stat--kills .hero-stat-label { color: rgba(251, 113, 133, 0.85); }
+/* Light theme: slightly deeper for contrast on pale bg */
+body.dashboard-body[data-theme="light"] .hero-stat--teams .hero-stat-num { color: #0284c7; }
+body.dashboard-body[data-theme="light"] .hero-stat--teams .hero-stat-label { color: #0369a1; }
+body.dashboard-body[data-theme="light"] .hero-stat--rounds .hero-stat-num { color: #d97706; }
+body.dashboard-body[data-theme="light"] .hero-stat--rounds .hero-stat-label { color: #b45309; }
+body.dashboard-body[data-theme="light"] .hero-stat--nades .hero-stat-num { color: #059669; }
+body.dashboard-body[data-theme="light"] .hero-stat--nades .hero-stat-label { color: #047857; }
+body.dashboard-body[data-theme="light"] .hero-stat--kills .hero-stat-num { color: #e11d48; }
+body.dashboard-body[data-theme="light"] .hero-stat--kills .hero-stat-label { color: #be123c; }
 
 /* CTA button */
 .hero-cta {
@@ -397,6 +439,9 @@ body[data-theme="light"] .hero-tag { color: #2563eb; }
   background: rgba(148, 163, 184, 0.15);
   transform: translateY(-1px);
 }
+body.dashboard-body[data-theme="dark"] .game-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
 
 .game-btn.active {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -501,6 +546,10 @@ body.dashboard-body[data-theme="dark"] .world-map-container {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+}
+
+body.dashboard-body[data-theme="dark"] .world-map-container::before {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, transparent 50%, rgba(255, 255, 255, 0.04) 100%);
 }
 
 .world-map-container svg {
@@ -1357,7 +1406,7 @@ path.country.selected-pulse {
 .dota-player-card {
   border: 1px solid var(--dbg-panel-border);
   border-radius: 12px;
-  background: rgba(15, 23, 42, 0.32);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--dbg-panel-text);
   padding: 8px;
   display: grid;
@@ -1570,7 +1619,7 @@ path.country.selected-pulse {
 .player-dashboard-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(6, 10, 20, 0.58);
+  background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(4px);
 }
 
@@ -2050,11 +2099,11 @@ path.country.selected-pulse {
   pointer-events: none;
   text-anchor: middle;
   dominant-baseline: middle;
-  fill: rgba(226, 232, 240, 0.9);
+  fill: rgba(245, 245, 245, 0.92);
   font-weight: 600;
   letter-spacing: 0.01em;
   paint-order: stroke;
-  stroke: rgba(15, 23, 42, 0.75);
+  stroke: rgba(0, 0, 0, 0.82);
   stroke-width: 2.2px;
   stroke-linejoin: round;
 }
@@ -2175,4 +2224,76 @@ body[data-theme="light"] .country-label {
 .eco-board-demo-section {
   margin-top: 2rem;
   margin-bottom: 1rem;
+}
+
+/* ============================================================
+   Dark theme — neutral surfaces (black / white alpha, not slate)
+   ============================================================ */
+body.dashboard-body[data-theme="dark"] .team-hover-item {
+  background: rgba(255, 255, 255, 0.12);
+}
+body.dashboard-body[data-theme="dark"] .team-list-item {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dashboard-body[data-theme="dark"] .country-player-search {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dashboard-body[data-theme="dark"] .player-sort-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dashboard-body[data-theme="dark"] .country-player-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+}
+body.dashboard-body[data-theme="dark"] .country-player-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.dashboard-body[data-theme="dark"] .player-row-btn {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.dashboard-body[data-theme="dark"] .dota-team-block {
+  background: rgba(255, 255, 255, 0.05);
+}
+body.dashboard-body[data-theme="dark"] .team-chip {
+  background: rgba(255, 255, 255, 0.07);
+}
+body.dashboard-body[data-theme="dark"] .player-kpi-card {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.dashboard-body[data-theme="dark"] .player-hltv-chip {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dashboard-body[data-theme="dark"] .player-social-link {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dashboard-body[data-theme="dark"] .player-news-item {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+body.dashboard-body[data-theme="dark"] .player-viz-card {
+  background: rgba(255, 255, 255, 0.06);
+}
+body.dashboard-body[data-theme="dark"] .radar-mode-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dashboard-body[data-theme="dark"] .radar-grid-ring {
+  stroke: rgba(255, 255, 255, 0.2);
+}
+body.dashboard-body[data-theme="dark"] .radar-axis-line {
+  stroke: rgba(255, 255, 255, 0.22);
+}
+body.dashboard-body[data-theme="dark"] .radar-country-avg {
+  fill: rgba(255, 255, 255, 0.08);
+  stroke: rgba(255, 255, 255, 0.35);
+}
+body.dashboard-body[data-theme="dark"] .player-mini-bar-baseline {
+  background: rgba(255, 255, 255, 0.14);
+}
+body.dashboard-body[data-theme="dark"] .player-mini-bar-track {
+  background: rgba(255, 255, 255, 0.16);
+}
+body.dashboard-body[data-theme="dark"] .player-mini-bar-avg {
+  background: rgba(255, 255, 255, 0.38);
+}
+body.dashboard-body[data-theme="dark"] .player-page-btn {
+  background: rgba(255, 255, 255, 0.08);
 }

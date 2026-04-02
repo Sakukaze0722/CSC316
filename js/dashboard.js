@@ -16,8 +16,8 @@
 
   const THEME_COLORS = {
     dark: {
-      cs: { base: "#334155", hover: "#475569", active: "#3b82f6", glow: "rgba(59,130,246,0.45)", stroke: "rgba(255, 255, 255, 0.15)" },
-      dota2: { base: "#334155", hover: "#475569", active: "#8b5cf6", glow: "rgba(139,92,246,0.45)", stroke: "rgba(255, 255, 255, 0.15)" },
+      cs: { base: "#262626", hover: "#404040", active: "#3b82f6", glow: "rgba(59,130,246,0.45)", stroke: "rgba(255, 255, 255, 0.14)" },
+      dota2: { base: "#262626", hover: "#404040", active: "#8b5cf6", glow: "rgba(139,92,246,0.45)", stroke: "rgba(255, 255, 255, 0.14)" },
     },
     light: {
       cs: { base: "#cbd5e1", hover: "#94a3b8", active: "#3b82f6", glow: "rgba(59,130,246,0.35)", stroke: "#94a3b8" },

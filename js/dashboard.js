@@ -2623,39 +2623,136 @@
     if (!particlesCanvas) return;
     const ctx = particlesCanvas.getContext("2d");
     if (!ctx) return;
-    let w = 0;
-    let h = 0;
-    let ps = [];
+
+    let w = 0, h = 0;
+    const mouse  = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const aura   = { x: mouse.x, y: mouse.y, radius: 0, time: 0 };
 
     function resize() {
       w = window.innerWidth;
       h = window.innerHeight;
       particlesCanvas.width = w;
       particlesCanvas.height = h;
-      const n = Math.max(35, Math.floor((w * h) / 42000));
-      ps = Array.from({ length: n }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18, r: Math.random() * 1.8 + 0.6 }));
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    window.addEventListener("mousemove", (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener("touchmove", (e) => {
+      if (e.touches.length) { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }
+    }, { passive: true });
+
+    const GRID = 4;
+    const SEGMENTS = 120;
+    const EXPAND_SPEED_RATIO = 0.004;
+    const MIN_EXPAND = 1.4;
+    const TWO_PI = Math.PI * 2;
+
+    function getWaveOffset(theta, t) {
+      return Math.sin(theta * 3 + t * 2) * 35
+           + Math.cos(theta * 5 - t * 1.5) * 22
+           + Math.sin(theta * 2 + t * 3) * 28;
+    }
+
+    const heroEl = document.getElementById("heroSection");
+    function isHeroVisible() {
+      if (!heroEl) return false;
+      const r = heroEl.getBoundingClientRect();
+      return r.bottom > 0 && r.top < h;
     }
 
     function step() {
+      if (!isHeroVisible()) {
+        ctx.clearRect(0, 0, w, h);
+        particlesRAF = requestAnimationFrame(step);
+        return;
+      }
+
+      aura.time += 0.002;
+      aura.radius += Math.max(MIN_EXPAND, (w / 2) * EXPAND_SPEED_RATIO);
+
+      const maxR = Math.max(w, h) * 1.2;
+      if (aura.radius > maxR) {
+        aura.x = mouse.x;
+        aura.y = mouse.y;
+        aura.radius = 0;
+      }
+
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = currentTheme === "dark" ? "rgba(148,163,184,0.35)" : "rgba(71,85,105,0.16)";
-      ps.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = w;
-        if (p.x > w) p.x = 0;
-        if (p.y < 0) p.y = h;
-        if (p.y > h) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
+
+      const isDark = currentTheme === "dark";
+      const baseR = aura.radius;
+      const t = aura.time;
+      const ox = aura.x, oy = aura.y;
+
+      let gAlpha = 1;
+      if (baseR < 60) gAlpha = baseR / 60;
+      else if (baseR > maxR - 200) gAlpha = Math.max(0, (maxR - baseR) / 200);
+
+      ctx.globalCompositeOperation = "screen";
+
+      ctx.beginPath();
+      for (let i = 0; i <= SEGMENTS; i++) {
+        const theta = (i / SEGMENTS) * TWO_PI;
+        const r = Math.max(0, baseR + getWaveOffset(theta, t));
+        const px = ox + r * Math.cos(theta);
+        const py = oy + r * Math.sin(theta);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      const coreR = isDark ? 0 : 40;
+      const coreG = isDark ? 190 : 100;
+      const coreB = 255;
+      const layers = [
+        { width: 240, opacity: 0.012 },
+        { width: 140, opacity: 0.025 },
+        { width: 70,  opacity: 0.045 },
+        { width: 30,  opacity: 0.07 },
+        { width: 10,  opacity: 0.10 },
+      ];
+      for (const l of layers) {
+        ctx.lineWidth = l.width;
+        ctx.strokeStyle = `rgba(${coreR},${coreG},${coreB},${(l.opacity * gAlpha).toFixed(4)})`;
+        ctx.stroke();
+      }
+
+      const numDots = Math.min(5000, Math.max(2000, Math.round(w * h / 450)));
+      const fillColor = isDark ? "#00e5ff" : "#2563eb";
+      ctx.fillStyle = fillColor;
+
+      for (let i = 0; i < numDots; i++) {
+        const theta = (i / numDots) * TWO_PI;
+        const waveOff = getWaveOffset(theta, t);
+
+        const u = 1 - Math.random();
+        const v = Math.random();
+        const spread = Math.sqrt(-2 * Math.log(u)) * Math.cos(TWO_PI * v) * 70;
+        const r = baseR + waveOff + spread;
+        if (r < 0) continue;
+
+        const rawX = ox + r * Math.cos(theta);
+        const rawY = oy + r * Math.sin(theta);
+        const gx = Math.round(rawX / GRID) * GRID;
+        const gy = Math.round(rawY / GRID) * GRID;
+
+        const dist = Math.abs(spread);
+        let opacity = 1 - dist / 100;
+        if (opacity <= 0.02) continue;
+
+        const flicker = (Math.sin(theta * 30 + t * 15) + 1) * 0.5;
+        ctx.globalAlpha = opacity * 0.13 * (0.7 + 0.3 * flicker) * gAlpha;
+        ctx.fillRect(gx, gy, GRID - 1, GRID - 1);
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
       particlesRAF = requestAnimationFrame(step);
     }
 
-    resize();
     step();
-    window.addEventListener("resize", resize);
   }
 
   function initModal() {

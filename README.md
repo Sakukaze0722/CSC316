@@ -31,7 +31,6 @@ The project narrative focuses on **Team Vitality vs The MongolZ** in BLAST.tv Au
 
 Local run URLs for graders:
 - `http://localhost:8000/index.html` (main narrative page)
-- `http://localhost:8000/eco_board.html` (standalone economy board)
 
 ## 4) Code Ownership and Third-Party Components
 

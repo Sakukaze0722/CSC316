@@ -26,7 +26,7 @@ The project narrative focuses on **Team Vitality vs The MongolZ** in BLAST.tv Au
 > Replace the placeholder links below with your final submission links before turning in.
 
 - Live project website: [DEPLOYED_URL](https://sakukaze0722.github.io/CSC316/)
-- Screencast video: [ADD_VIDEO_URL_HERE](https://youtu.be/ooL0xdgOUvE)
+- Screencast video: [VIDEO_URL](https://youtu.be/ooL0xdgOUvE)
 - Process book: [Google Doc](https://docs.google.com/document/d/1NKH5xZR5wIj18D-olm01dzN4KouP6KCWZSJSmoghnYo/edit?tab=t.811dyplrep1e#heading=h.1em731hdludi)
 
 Local run URLs for graders:
